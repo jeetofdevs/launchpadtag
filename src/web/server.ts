@@ -61,7 +61,9 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     return c.redirect("/claim");
   }
 
-  const page = (title: string, body: Raw) => layout(title, body, cfg.x.botHandle);
+  /** Render a page with the signed-in user (if any) shown in the header. */
+  const render = async (c: Context, title: string, body: Raw, description?: string) =>
+    layout(title, body, { botHandle: cfg.x.botHandle, user: await session(c), description, publicUrl: cfg.publicUrl });
 
   const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
@@ -105,71 +107,160 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     const h = cfg.x.triggerHandle;
     const fee = feeSplit(cfg.chain);
     const shotUrl = `https://x.com/intent/post?text=${encodeURIComponent(`@${h} launch $TICKER "Token Name" paired $NVDA`)}`;
-    return c.html(page("LONGSHOT", html`
-      <section class="hero">
-        <span class="tag">Take a shot on Long</span>
-        <h1>One tweet.<br>One token.</h1>
-        <p class="lead">Tag <b>@${h}</b> with a ticker and LONGSHOT launches your token on Long.xyz, paired with a real tokenized stock. <b>You earn ${pct(fee.share.deployer)} of every trading fee — forever.</b></p>
-        <div class="row"><a class="btn" href="${shotUrl}" target="_blank" rel="noopener">Take your shot on X →</a><a class="btn ghost" href="#tokenomics">Tokenomics</a></div>
-        <pre>@${h} launch $ROBO "Robo Tesla" paired $TSLA</pre>
-      </section>
-      <div class="grid">
-        <div class="stat"><b>${stats.n}</b><small>tokens live</small></div>
-        <div class="stat"><b>${stats.u}</b><small>deployers</small></div>
-        <div class="stat"><b>${pct(fee.share.deployer)}</b><small>of every trading fee to you</small></div>
-      </div>
-
-      <h2>How it works</h2>
-      <ol class="steps">
-        <li><b>Tweet it.</b> <code>@${h} launch $TICKER</code>. Optional: <code>"Token Name"</code>, <code>paired $NVDA|AAPL|MSFT|GOOGL|TSLA|MU|SPCX</code>, and a photo for the logo.</li>
-        <li><b>It's live.</b> LONGSHOT deploys your token and replies with the contract address — usually within a minute.</li>
-        <li><b>Get paid.</b> Every buy and sell pays a trading fee — ${pct(fee.share.deployer)} of it is yours.</li>
-        <li><b>Claim — or Claim &amp; Burn 🔥.</b> Open <a href="/claim">/claim</a>, sign in with X, and withdraw to any wallet. Choose <i>Claim &amp; Burn</i> to destroy the rewards paid in your own token and shrink its supply.</li>
-      </ol>
-
-      <h2 id="tokenomics">Tokenomics</h2>
-      <p class="muted">Every token launched with LONGSHOT gets the same fair, fixed setup.</p>
-      <div class="tk-grid">
-        <div class="tk"><b>1B</b><small>${Number(TOKENOMICS.supply).toLocaleString("en-US")} fixed supply — no minting, ever</small></div>
-        <div class="tk"><b>${TOKENOMICS.curvePct}%</b><small>fair launch — every token sold on the curve</small></div>
-        <div class="tk"><b>${TOKENOMICS.teamPct}%</b><small>team · ${TOKENOMICS.presalePct}% presale · no insiders</small></div>
-        <div class="tk"><b>Locked</b><small>liquidity stays in the pool forever</small></div>
-        <div class="tk"><b>Stock-paired</b><small>trades against a real Robinhood Stock Token</small></div>
-        <div class="tk"><b>${pct(fee.poolFee)}</b><small>fee on every buy &amp; sell</small></div>
-      </div>
-
-      <h2>Creator rewards</h2>
-      <div class="reward">
-        <div class="reward-big"><b>${pct(fee.share.deployer)}</b><span>of every trading fee goes to the person who launched the token.</span></div>
-        <div class="split big" role="img" aria-label="Trading fee split: ${pct(fee.share.deployer)} to you, ${pct(fee.share.platform)} to LONGSHOT">
-          <span class="seg s1" style="flex:${fee.share.deployer}">YOU ${pct(fee.share.deployer)}</span><span class="seg s2" style="flex:${fee.share.platform}">${pct(fee.share.platform)}</span>
+    const stocksCount = STOCKS.length;
+    return c.html(await render(c, "LONGSHOT — One tweet. One token.", html`
+      <section class="hero2">
+        <div>
+          <span class="tag">Take a shot on Long</span>
+          <h1>One tweet.<br>One token.</h1>
+          <p class="lead">Tag <b>@${h}</b> with a ticker and LONGSHOT launches your token on Long.xyz — paired with a real tokenized stock. <b>You earn ${pct(fee.share.deployer)} of every trading fee, forever.</b></p>
+          <div class="row"><a class="btn" href="${shotUrl}" target="_blank" rel="noopener">Take your shot on X →</a><a class="btn ghost" href="#how">How it works</a></div>
+          <div class="chipline"><span class="chip">No wallet needed to launch</span><span class="chip">Free to launch</span><span class="chip">${stocksCount} stock pairs</span><span class="chip">Claim &amp; Burn</span></div>
         </div>
-        <ul class="legend">
-          <li><i class="dot s1"></i><b>${pct(fee.share.deployer)} → you</b>, the deployer</li>
-          <li><i class="dot s2"></i><b>${pct(fee.share.platform)} → LONGSHOT</b>, keeps the bot running<sup>*</sup></li>
-        </ul>
-        <p class="muted">Rewards arrive in both your token and the paired stock.</p>
-        <p class="muted small"><sup>*</sup>LONGSHOT's ${pct(fee.share.platform)} includes the ${pct(fee.share.protocol)} Doppler launch-protocol fee. Your ${pct(fee.share.deployer)} is never reduced.</p>
+        <div aria-label="Example: a launch tweet and LONGSHOT's automatic reply">
+          <div class="tweet">
+            <div class="tw-head"><span class="av alt">D</span><span class="tw-name">degen.eth<small>@degen · now</small></span></div>
+            <div class="tw-body"><span class="m">@${h}</span> launch $ROBO "Robo Tesla" paired $TSLA</div>
+          </div>
+          <div class="tweet">
+            <div class="tw-head"><span class="av">LS</span><span class="tw-name">LONGSHOT<small>@${cfg.x.botHandle} · automated</small></span></div>
+            <div class="tw-body">✅ $ROBO "Robo Tesla" is LIVE on <span class="m">@${h}</span>
+📈 Paired: $TSLA
+📜 CA: 0x7b6c…dc9a
+💰 <span class="m">@degen</span> earns ${pct(fee.share.deployer)} of every trading fee</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="band">
+        <div class="stat"><b>${stats.n}</b><small>tokens launched</small></div>
+        <div class="stat"><b>${stats.u}</b><small>deployers</small></div>
+        <div class="stat"><b>${pct(fee.share.deployer)}</b><small>of every fee to the creator</small></div>
+        <div class="stat"><b>${stocksCount}</b><small>real stocks to pair with</small></div>
       </div>
 
-      <h3>Rewards so far</h3>
-      <div class="rewards-now">
-        <div class="rn"><small>Claimed by deployers</small>${claimedHtml}</div>
-        <div class="rn"><small>Unclaimed — ready to withdraw</small>${unclaimedHtml}</div>
-        <div class="rn burn"><small>🔥 Burned by deployers</small>${burnedHtml}</div>
-      </div>
-      ${tokenAssets > 0 ? html`<p class="muted small">Plus rewards paid in ${tokenAssets} launched token${tokenAssets === 1 ? "" : "s"}. Full breakdown on <a href="/fees">Transparency</a>.</p>` : html`<p class="muted small">Live totals across every LONGSHOT token. Full breakdown on <a href="/fees">Transparency</a>.</p>`}
+      <section class="section" id="how">
+        <h2>How it works</h2>
+        <p class="sub">From tweet to live token in about a minute. No website, no wallet, no gas.</p>
+        <div class="steps4">
+          <div class="step"><b>Tweet it</b><p>Post <code>@${h} launch $TICKER</code>. Add <code>"Name"</code>, <code>paired $TSLA</code> and a photo for the logo if you like.</p></div>
+          <div class="step"><b>We launch it</b><p>LONGSHOT checks the ticker is free, deploys your token on Long.xyz and pays the gas.</p></div>
+          <div class="step"><b>Auto reply</b><p><b>@${cfg.x.botHandle}</b> replies under your tweet with the contract address and trade link.</p></div>
+          <div class="step"><b>Get paid</b><p>Every buy and sell pays you ${pct(fee.share.deployer)} of the fee. Sign in with X to claim — or claim &amp; burn.</p></div>
+        </div>
+      </section>
 
-      <div class="card"><div class="muted">LONGSHOT Treasury address</div>
-        <a class="mono" href="${long.addressUrl(long.treasury)}">${long.treasury}</a></div>
-      <h2>Latest launches</h2>
-      ${recent.length === 0 ? html`<p class="muted">No tokens yet. Be the first.</p>` : html`
-      <div class="scroll"><table><tr><th>Token</th><th>Paired</th><th>Deployer</th><th>CA</th></tr>
-      ${recent.map((r) => html`<tr><td><b>$${r.ticker}</b> <span class="muted">${r.name}</span></td><td>$${r.stock}</td>
-        <td><a href="https://x.com/${r.x_username}/status/${r.tweet_id}">@${r.x_username}</a></td>
-        <td><a class="mono" href="${tokenUrl(cfg, r.token_address)}">${shortAddr(r.token_address)}</a></td></tr>`)}
-      </table></div>`}
+      <section class="section">
+        <h2>Why LONGSHOT</h2>
+        <p class="sub">Built for creators who move fast — and for holders who want a fair start.</p>
+        <div class="features">
+          <div class="feat"><i>📈</i><b>Stock-paired</b><p>Every token trades against a real Robinhood Stock Token — NVDA, TSLA, AAPL and more.</p></div>
+          <div class="feat"><i>⚖️</i><b>100% fair launch</b><p>1B fixed supply, all on the curve. No team allocation, no presale, no insiders.</p></div>
+          <div class="feat"><i>💰</i><b>${pct(fee.share.deployer)} creator rewards</b><p>The person who tweets earns most of every trading fee — forever, claimable any time.</p></div>
+          <div class="feat"><i>🔥</i><b>Claim &amp; Burn</b><p>Burn the rewards paid in your own token to shrink supply — recorded on-chain and on our Transparency page.</p></div>
+          <div class="feat"><i>🛡️</i><b>No copycat tickers</b><p>Tickers already used on Long.xyz, and every Robinhood stock symbol, are reserved automatically.</p></div>
+          <div class="feat"><i>🔍</i><b>Open treasury</b><p>Every fee collected and every payout is listed with its transaction — check it yourself.</p></div>
+        </div>
+      </section>
+
+      <section class="section" id="tokenomics">
+        <h2>Tokenomics</h2>
+        <p class="sub">Every token launched with LONGSHOT gets the same fair, fixed setup.</p>
+        <div class="tk-grid">
+          <div class="tk"><b>1B</b><small>${Number(TOKENOMICS.supply).toLocaleString("en-US")} fixed supply — no minting, ever</small></div>
+          <div class="tk"><b>${TOKENOMICS.curvePct}%</b><small>fair launch — every token sold on the curve</small></div>
+          <div class="tk"><b>${TOKENOMICS.teamPct}%</b><small>team · ${TOKENOMICS.presalePct}% presale · no insiders</small></div>
+          <div class="tk"><b>Locked</b><small>liquidity stays in the pool forever</small></div>
+          <div class="tk"><b>Stock-paired</b><small>trades against a real Robinhood Stock Token</small></div>
+          <div class="tk"><b>${pct(fee.poolFee)}</b><small>fee on every buy &amp; sell</small></div>
+        </div>
+
+        <h3>Creator rewards</h3>
+        <div class="reward">
+          <div class="reward-big"><b>${pct(fee.share.deployer)}</b><span>of every trading fee goes to the person who launched the token.</span></div>
+          <div class="split big" role="img" aria-label="Trading fee split: ${pct(fee.share.deployer)} to you, ${pct(fee.share.platform)} to LONGSHOT">
+            <span class="seg s1" style="flex:${fee.share.deployer}">YOU ${pct(fee.share.deployer)}</span><span class="seg s2" style="flex:${fee.share.platform}">${pct(fee.share.platform)}</span>
+          </div>
+          <ul class="legend">
+            <li><i class="dot s1"></i><b>${pct(fee.share.deployer)} → you</b>, the deployer</li>
+            <li><i class="dot s2"></i><b>${pct(fee.share.platform)} → LONGSHOT</b>, keeps the bot running<sup>*</sup></li>
+          </ul>
+          <p class="muted">Rewards arrive in both your token and the paired stock.</p>
+          <p class="muted small"><sup>*</sup>LONGSHOT's ${pct(fee.share.platform)} includes the ${pct(fee.share.protocol)} Doppler launch-protocol fee. Your ${pct(fee.share.deployer)} is never reduced.</p>
+        </div>
+
+        <h3>Rewards so far</h3>
+        <div class="rewards-now">
+          <div class="rn"><small>Claimed by deployers</small>${claimedHtml}</div>
+          <div class="rn"><small>Unclaimed — ready to withdraw</small>${unclaimedHtml}</div>
+          <div class="rn burn"><small>🔥 Burned by deployers</small>${burnedHtml}</div>
+        </div>
+        ${tokenAssets > 0 ? html`<p class="muted small">Plus rewards paid in ${tokenAssets} launched token${tokenAssets === 1 ? "" : "s"}. Full breakdown on <a href="/fees">Transparency</a>.</p>` : html`<p class="muted small">Live totals across every LONGSHOT token. Full breakdown on <a href="/fees">Transparency</a>.</p>`}
+      </section>
+
+      <section class="section">
+        <h2>Latest launches <a class="more" href="/launches">View all →</a></h2>
+        ${recent.length === 0 ? html`<p class="muted">No tokens yet. Be the first — <a href="${shotUrl}" target="_blank" rel="noopener">take your shot</a>.</p>` : html`
+        <div class="scroll"><table><tr><th>Token</th><th>Paired</th><th>Deployer</th><th>CA</th></tr>
+        ${recent.map((r) => html`<tr><td><a href="/t/${r.tweet_id}"><b>$${r.ticker}</b></a> <span class="muted">${r.name}</span></td><td>$${r.stock}</td>
+          <td><a href="https://x.com/${r.x_username}/status/${r.tweet_id}" target="_blank" rel="noopener">@${r.x_username}</a></td>
+          <td><a class="mono" href="${tokenUrl(cfg, r.token_address)}" target="_blank" rel="noopener">${shortAddr(r.token_address)}</a></td></tr>`)}
+        </table></div>`}
+      </section>
+
+      <section class="section">
+        <h2>Roadmap</h2>
+        <p class="sub">What's shipped and what's next.</p>
+        <div class="road">
+          <div class="phase"><span class="st live">Live</span><b>Phase 1 — Launch by tag</b><ul><li>Launch from a tweet</li><li>Automatic reply with CA</li><li>80% creator rewards &amp; claim</li><li>Claim &amp; Burn</li><li>Reserved tickers &amp; open treasury</li></ul></div>
+          <div class="phase"><span class="st">Next</span><b>Phase 2 — Discovery</b><ul><li>Creator leaderboard</li><li>Token pages with charts</li><li>Launch alerts on X</li><li>Referral rewards</li></ul></div>
+          <div class="phase"><span class="st">Later</span><b>Phase 3 — Everywhere</b><ul><li>Launch from Farcaster &amp; Telegram</li><li>Buy &amp; info commands by tag</li><li>On-chain fee splitter</li></ul></div>
+        </div>
+      </section>
+
+      <section class="section faq" id="faq">
+        <h2>FAQ</h2>
+        <details><summary>What is LONGSHOT?</summary><p>A bot that launches tokens on Long.xyz for you. Tweet <code>@${h} launch $TICKER</code> and LONGSHOT deploys the token, replies with the contract address, and pays you ${pct(fee.share.deployer)} of every trading fee.</p></details>
+        <details><summary>Is LONGSHOT part of Long.xyz?</summary><p>No. LONGSHOT is an independent project built on the same launch infrastructure. The only official LONGSHOT account is <a href="https://x.com/${cfg.x.botHandle}" target="_blank" rel="noopener">@${cfg.x.botHandle}</a>.</p></details>
+        <details><summary>What does it cost to launch?</summary><p>Nothing. LONGSHOT pays the gas. It's funded by its ${pct(fee.share.platform)} share of trading fees.</p></details>
+        <details><summary>Who can launch?</summary><p>Any X account at least ${cfg.rules.minAccountAgeDays} days old with ${cfg.rules.minFollowers}+ followers. Each account can launch ${cfg.rules.launchesPerDay} token per 24 hours.</p></details>
+        <details><summary>Why did the bot say my ticker is reserved?</summary><p>That ticker was already launched on Long.xyz (or via LONGSHOT), or it's a real Robinhood stock symbol. Pick another ticker and tweet again.</p></details>
+        <details><summary>How do I claim my rewards?</summary><p>Open <a href="/claim">Claim</a>, sign in with the X account you tweeted from, enter any EVM wallet and press <b>Claim all</b>. Rewards are tracked by your X account ID, so renaming your account is safe.</p></details>
+        <details><summary>What is Claim &amp; Burn?</summary><p>Your stock rewards go to your wallet, while the rewards paid in your own token are sent to the burn address and destroyed forever — shrinking your token's supply.</p></details>
+        <details><summary>How do I know the fees are paid fairly?</summary><p>The <a href="/fees">Transparency</a> page lists every fee collected per token and every payout or burn with its on-chain transaction. The Treasury address is <a class="mono" href="${long.addressUrl(long.treasury)}" target="_blank" rel="noopener">${shortAddr(long.treasury)}</a>.</p></details>
+        <details><summary>Will LONGSHOT ever DM me?</summary><p>Never. We don't DM first and will never ask for your seed phrase or private key. Anyone who does is a scammer.</p></details>
+      </section>
+
+      <section class="cta">
+        <h2>Take your shot.</h2>
+        <p>One tweet is all it takes.</p>
+        <div class="row"><a class="btn" href="${shotUrl}" target="_blank" rel="noopener">Launch on X →</a><a class="btn ghost" href="/claim">Claim rewards</a></div>
+      </section>
     `));
+  });
+
+  // ── Sign in ───────────────────────────────────────────────────────────────
+  app.get("/login", (c) => c.redirect(cfg.x.oauthClientId ? "/auth/x" : "/claim"));
+
+  // ── All launches ──────────────────────────────────────────────────────────
+  app.get("/launches", async (c) => {
+    const q = (c.req.query("q") ?? "").replace(/^\$/, "").trim().toUpperCase().slice(0, 10);
+    const rows = (q
+      ? db.prepare("SELECT tweet_id, ticker, name, stock, x_username, token_address, created_at FROM launches WHERE status = 'live' AND (ticker LIKE ? OR UPPER(x_username) LIKE ?) ORDER BY created_at DESC LIMIT 200").all(`${q}%`, `${q}%`)
+      : db.prepare("SELECT tweet_id, ticker, name, stock, x_username, token_address, created_at FROM launches WHERE status = 'live' ORDER BY created_at DESC LIMIT 200").all()
+    ) as { tweet_id: string; ticker: string; name: string; stock: string; x_username: string; token_address: string; created_at: number }[];
+    return c.html(await render(c, "Launches · LONGSHOT", html`
+      <span class="tag">Launches</span>
+      <h1>Every LONGSHOT token</h1>
+      <form class="search" method="get" action="/launches"><input type="search" name="q" value="${q}" placeholder="Search ticker or @creator" aria-label="Search"><button class="btn" type="submit">Search</button></form>
+      ${rows.length === 0 ? html`<p class="muted">${q ? "No matches." : "No tokens yet."}</p>` : html`
+      <div class="scroll"><table><tr><th>Token</th><th>Paired</th><th>Creator</th><th>Launched</th><th>CA</th></tr>
+      ${rows.map((r) => html`<tr><td><a href="/t/${r.tweet_id}"><b>$${r.ticker}</b></a> <span class="muted">${r.name}</span></td><td>$${r.stock}</td>
+        <td><a href="https://x.com/${r.x_username}" target="_blank" rel="noopener">@${r.x_username}</a></td>
+        <td class="nowrap">${new Date(r.created_at).toISOString().slice(0, 10)}</td>
+        <td><a class="mono" href="${tokenUrl(cfg, r.token_address)}" target="_blank" rel="noopener">${shortAddr(r.token_address)}</a></td></tr>`)}
+      </table></div>`}
+    `, "Every token launched with LONGSHOT on Long.xyz."));
   });
 
   // ── Token metadata (used when Pinata is not configured) ────────────────────
@@ -180,10 +271,32 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     return c.json(buildMetadata(l, cfg.publicUrl));
   });
 
-  app.get("/t/:tweetId", (c) => {
-    const l = db.prepare("SELECT token_address FROM launches WHERE tweet_id = ? AND status = 'live'").get(c.req.param("tweetId")) as
-      | { token_address: string } | undefined;
-    return l ? c.redirect(tokenUrl(cfg, l.token_address)) : c.notFound();
+  app.get("/t/:tweetId", async (c) => {
+    const l = db.prepare("SELECT * FROM launches WHERE tweet_id = ? AND status = 'live'").get(c.req.param("tweetId")) as
+      | { tweet_id: string; ticker: string; name: string; stock: string; x_username: string; token_address: string; tx_hash: string; created_at: number; image_url: string | null }
+      | undefined;
+    if (!l) return c.notFound();
+    const fees = feeReport(db).filter((r) => r.tokenAddress.toLowerCase() === l.token_address.toLowerCase());
+    const burned = rewardTotals(db).find((t) => t.asset === l.token_address.toLowerCase())?.burned ?? 0n;
+    const feeRows = await Promise.all(fees.map(async (r) => html`<tr><td>${(await long.assetInfo(r.asset as Address)).symbol}</td>
+      <td class="num">${await fmt(r.asset, r.totalFees)}</td><td class="num ok">${await fmt(r.asset, r.deployerShare)}</td></tr>`));
+    return c.html(await render(c, `$${l.ticker} · ${l.name} · LONGSHOT`, html`
+      <div class="tokhead">
+        ${l.image_url?.startsWith("https://") ? html`<img class="av" src="${l.image_url}" alt="" style="object-fit:cover">` : html`<span class="av">${l.ticker.slice(0, 2)}</span>`}
+        <div><span class="tag">Paired with $${l.stock}</span><h1 style="margin:4px 0 0">$${l.ticker}</h1><div class="muted">${l.name}</div></div>
+      </div>
+      <div class="row" style="margin-top:18px"><a class="btn" href="${tokenUrl(cfg, l.token_address)}" target="_blank" rel="noopener">Trade on Long.xyz →</a><a class="btn ghost" href="https://x.com/${l.x_username}/status/${l.tweet_id}" target="_blank" rel="noopener">Launch tweet</a></div>
+      <div class="kv">
+        <div><small>Creator</small><a href="https://x.com/${l.x_username}" target="_blank" rel="noopener">@${l.x_username}</a></div>
+        <div><small>Launched</small>${new Date(l.created_at).toISOString().slice(0, 16).replace("T", " ")} UTC</div>
+        <div><small>Supply</small>1,000,000,000</div>
+        <div><small>Contract</small><a class="mono" href="${long.addressUrl(l.token_address)}" target="_blank" rel="noopener">${shortAddr(l.token_address)}</a></div>
+        <div><small>Launch tx</small><a class="mono" href="${long.txUrl(l.tx_hash)}" target="_blank" rel="noopener">${shortAddr(l.tx_hash)}</a></div>
+        <div><small>🔥 Burned by creator</small>${burned > 0n ? await fmt(l.token_address, burned) : "0"}</div>
+      </div>
+      <h3>Creator rewards</h3>
+      ${feeRows.length ? html`<div class="scroll"><table><tr><th>Asset</th><th class="num">Fees collected</th><th class="num">Creator's share</th></tr>${feeRows}</table></div>` : html`<p class="muted">No fees collected yet — fees are collected from the pool regularly.</p>`}
+    `, `$${l.ticker} (${l.name}) — launched by @${l.x_username} with LONGSHOT, paired with $${l.stock}.`));
   });
 
   // ── Public transparency ────────────────────────────────────────────────────
@@ -201,7 +314,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       <td>${p.x_username ? `@${p.x_username}` : "—"}${p.to_address.toLowerCase() === BURN_ADDRESS.toLowerCase() ? html` <span class="burn-tag">🔥 burned</span>` : raw("")}</td>
       <td class="num">${await fmt(p.asset, BigInt(p.amount))}</td>
       <td><a class="mono" href="${long.txUrl(p.tx_hash)}">${shortAddr(p.tx_hash)}</a></td></tr>`));
-    return c.html(page("Fee transparency · LONGSHOT", html`
+    return c.html(await render(c, "Fee transparency · LONGSHOT", html`
       <span class="tag">Transparency</span>
       <h1>Where do the fees go?</h1>
       <p class="lead">Trading fees are collected into the LONGSHOT Treasury, and the deployer's 80% of every fee is paid out on claim. Every number below can be checked on the explorer.</p>
@@ -260,7 +373,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
   app.get("/claim", async (c) => {
     const s = await session(c);
     if (!s) {
-      return c.html(page("Claim fee · LONGSHOT", html`
+      return c.html(await render(c, "Claim fee · LONGSHOT", html`
         <span class="tag">Claim</span><h1>Claim your rewards</h1>
         <p class="lead">Sign in with the X account you tagged from. Fees are tracked by X account ID, so they stay yours even if you change your username.</p>
         <p><a class="btn" href="/auth/x">Sign in with X</a></p>
@@ -287,7 +400,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     const flash = await getSignedCookie(c, secret, FLASH);
     if (flash) deleteCookie(c, FLASH, { path: "/claim" });
 
-    return c.html(page("Claim fee · LONGSHOT", html`
+    return c.html(await render(c, "Claim fee · LONGSHOT", html`
       <div class="row" style="justify-content:space-between"><span class="tag">Claim · @${s.username}</span><a class="muted" href="/logout">Sign out</a></div>
       <h1>Your fees</h1>
       ${flash ? html`<div class="card">${flash}</div>` : raw("")}

@@ -65,3 +65,32 @@ test("claim page offers Claim & Burn and the POST burns own-token rewards", asyn
   const burned = d.long.transfers.filter((t) => t.to.toLowerCase() === "0x000000000000000000000000000000000000dead");
   assert.equal(burned.length, 1);
 });
+
+test("launches list, token page, and sign-in link", async () => {
+  const { handleMention } = await import("../src/bot.ts");
+  const { author, nextTweetId } = await import("./helpers.ts");
+  const d = setup();
+  d.cfg.sessionSecret = "s".repeat(32);
+  const tweetId = nextTweetId();
+  await handleMention(d, { tweetId, text: '@longdotxyz launch $PAGE "Page Token" paired $AAPL', author: author({ username: "pager" }) });
+  const app = createApp(d.cfg, d.db, d.long);
+
+  const home = await (await app.request("http://x/")).text();
+  assert.match(home, /href="\/login">𝕏 Sign in</);
+  assert.match(home, /id="faq"/);
+
+  const list = await (await app.request("http://x/launches?q=pa")).text();
+  assert.match(list, /\$PAGE/);
+  const none = await (await app.request("http://x/launches?q=zzz")).text();
+  assert.match(none, /No matches/);
+
+  const tok = await app.request(`http://x/t/${tweetId}`);
+  assert.equal(tok.status, 200);
+  const body = await tok.text();
+  assert.match(body, /Page Token/);
+  assert.match(body, /Paired with \$AAPL/);
+  assert.equal((await app.request("http://x/t/123")).status, 404);
+
+  const login = await app.request("http://x/login");
+  assert.equal(login.status, 302);
+});
