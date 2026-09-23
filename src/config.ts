@@ -122,8 +122,9 @@ export function loadConfig() {
       /**
        * X accounts with no launch limit and no account-age/follower minimums (e.g. the team's own),
        * comma-separated: usernames (with or without @) or numeric account IDs. Ticker rules still apply.
+       * Default: @nathanbullish (the LONGSHOT dev). Setting UNLIMITED_ACCOUNTS replaces the default.
        */
-      unlimitedAccounts: (process.env.UNLIMITED_ACCOUNTS ?? "").split(",").map((s) => s.trim().replace(/^@/, "").toLowerCase()).filter(Boolean),
+      unlimitedAccounts: (process.env.UNLIMITED_ACCOUNTS ?? "nathanbullish").split(",").map((s) => s.trim().replace(/^@/, "").toLowerCase()).filter(Boolean),
       /**
        * A ticker launched in the last N hours (via LONGSHOT or on Long.xyz) is reserved.
        * Default 72: Long.xyz frees a ticker again after 2–3 days. 0 = reserved forever.

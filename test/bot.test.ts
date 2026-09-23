@@ -147,3 +147,11 @@ test("UNLIMITED_ACCOUNTS: listed accounts have no daily limit or account minimum
   assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $OTHA", author: author({ id: "2" }) })).kind, "live");
   assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $OTHB", author: author({ id: "2" }) })).kind, "rejected"); // normal limit
 });
+
+test("@nathanbullish is a dev account by default", async () => {
+  const d = setup();
+  assert.deepEqual(d.cfg.rules.unlimitedAccounts, ["nathanbullish"]);
+  const me = author({ id: "9", username: "NathanBullish", followers: 0, createdAt: new Date() });
+  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $NATA", author: me })).kind, "live");
+  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $NATB", author: me })).kind, "live");
+});
