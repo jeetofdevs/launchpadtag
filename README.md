@@ -108,10 +108,10 @@ All launches and fee collection run from one operator wallet, the **LONGSHOT Tre
 
 ### Claim & Burn 🔥
 
-On `/claim` deployers choose between:
+On `/claim` deployers get two buttons:
 
-- **Claim all** — every reward (paired stock and their own token) goes to their wallet.
-- **Claim & Burn** — paired-stock rewards go to their wallet, while rewards paid in **their own token** are sent to the burn address `0x000000000000000000000000000000000000dEaD` and destroyed forever, shrinking the token's supply.
+- **Claim fees** — every reward (paired stock and their own token) goes to their wallet.
+- **Claim & burn supply** — paired-stock rewards go to their wallet, while rewards paid in **their own token** are sent to the burn address `0x000000000000000000000000000000000000dEaD` and destroyed forever, shrinking the token's supply.
 
 Burns are recorded like any payout, labelled 🔥 on `/fees`, and the home page shows the running "Burned by deployers" total next to claimed and unclaimed rewards.
 

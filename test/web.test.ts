@@ -56,7 +56,8 @@ test("claim page offers Claim & Burn and the POST burns own-token rewards", asyn
   const login = await app.request("http://x/auth/dev?uid=1001&username=degen");
   const cookie = (login.headers.getSetCookie?.() ?? [login.headers.get("set-cookie")!]).map((c) => c.split(";")[0]).join("; ");
   const page = await (await app.request("http://x/claim", { headers: { cookie } })).text();
-  assert.match(page, /Claim &amp; Burn 🔥/);
+  assert.match(page, />Claim fees</);
+  assert.match(page, />Claim &amp; burn supply</);
 
   const csrf = createHmac("sha256", d.cfg.sessionSecret).update("csrf:1001").digest("hex");
   const body = new URLSearchParams({ to: "0x00000000000000000000000000000000000000aa", csrf, mode: "burn" });

@@ -88,6 +88,30 @@ PUBLIC_URL=https://longshotpad.xyz
 
 ✅ **Stage 1 done.** In this mode no tweets are read and no real tokens are created.
 
+### Step 8 (optional, can be done now). Turn on "Sign in with X"
+
+This only enables login on the website — the bot stays off, and no paid X plan is needed for login alone.
+
+1. Sign in to **https://developer.x.com** with **@longshotpadxyz** and open (or create) a **Project → App**.
+2. In the App, open **Settings → User authentication settings → Set up**:
+   - **App permissions:** Read (Read and write is also fine — the bot will need it later)
+   - **Type of App:** Web App, Automated App or Bot
+   - **Callback URI / Redirect URL:** `https://longshotpad.xyz/auth/x/callback`
+   - **Website URL:** `https://longshotpad.xyz`
+   - Save, then copy the **Client ID** and **Client Secret** (OAuth 2.0 keys).
+3. In Railway → **Variables**, add:
+
+```
+PUBLIC_URL=https://longshotpad.xyz
+X_OAUTH_CLIENT_ID=
+X_OAUTH_CLIENT_SECRET=
+```
+
+   Keep `X_ENABLED=false` for now. You can remove `ALLOW_DEV_LOGIN` — once X login is set up, the test login is disabled automatically.
+4. Open **https://longshotpad.xyz**, click **𝕏 Sign in**, approve on X, and you should come back signed in with your **@username** in the header.
+
+If sign-in fails, the Callback URI in the developer portal must match **exactly** `https://longshotpad.xyz/auth/x/callback` (https, no trailing slash), and `PUBLIC_URL` must be `https://longshotpad.xyz`.
+
 ---
 
 ## Stage 2 — Live mode
@@ -164,7 +188,7 @@ Check the logs for `LONGSHOT starting — chain=onchain, treasury=0x…`. The Tr
 2. Within about a minute the bot should reply with the contract address.
 3. Buy a small amount of the token so it earns fees.
 4. Wait about 15 minutes (fees are collected periodically).
-5. Open `https://longshotpad.xyz/claim`, sign in with X, enter your personal wallet, and click **Claim now**.
+5. Open `https://longshotpad.xyz/claim`, sign in with X, enter your personal wallet, and click **Claim fees**.
 6. Check your personal wallet: 80% of the fees should arrive.
 7. Tweet `@longdotxyz launch $SI` — the bot should reply `❌ $SI reserved. Try again using another ticker.`
 

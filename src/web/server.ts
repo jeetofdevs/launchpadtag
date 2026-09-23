@@ -225,8 +225,8 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
         <details><summary>What does it cost to launch?</summary><p>Nothing. LONGSHOT pays the gas. It's funded by its ${pct(fee.share.platform)} share of trading fees.</p></details>
         <details><summary>Who can launch?</summary><p>Any X account at least ${cfg.rules.minAccountAgeDays} days old with ${cfg.rules.minFollowers}+ followers. Each account can launch ${cfg.rules.launchesPerDay} token per 24 hours.</p></details>
         <details><summary>Why did the bot say my ticker is reserved?</summary><p>That ticker was already launched on Long.xyz (or via LONGSHOT), or it's a real Robinhood stock symbol. Pick another ticker and tweet again.</p></details>
-        <details><summary>How do I claim my rewards?</summary><p>Open <a href="/claim">Claim</a>, sign in with the X account you tweeted from, enter any EVM wallet and press <b>Claim all</b>. Rewards are tracked by your X account ID, so renaming your account is safe.</p></details>
-        <details><summary>What is Claim &amp; Burn?</summary><p>Your stock rewards go to your wallet, while the rewards paid in your own token are sent to the burn address and destroyed forever — shrinking your token's supply.</p></details>
+        <details><summary>How do I claim my rewards?</summary><p>Open <a href="/claim">Claim</a>, sign in with the X account you tweeted from, enter any EVM wallet and press <b>Claim fees</b> — or <b>Claim &amp; burn supply</b> to burn the rewards paid in your own token. Rewards are tracked by your X account ID, so renaming your account is safe.</p></details>
+        <details><summary>What is Claim &amp; burn supply?</summary><p>One of the two claim buttons. Your stock rewards go to your wallet, while the rewards paid in your own token are sent to the burn address and destroyed forever — shrinking your token's supply.</p></details>
         <details><summary>How do I know the fees are paid fairly?</summary><p>The <a href="/fees">Transparency</a> page lists every fee collected per token and every payout or burn with its on-chain transaction. The Treasury address is <a class="mono" href="${long.addressUrl(long.treasury)}" target="_blank" rel="noopener">${shortAddr(long.treasury)}</a>.</p></details>
         <details><summary>Will LONGSHOT ever DM me?</summary><p>Never. We don't DM first and will never ask for your seed phrase or private key. Anyone who does is a scammer.</p></details>
       </section>
@@ -407,18 +407,28 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       <p class="muted">Your tokens: ${tokens.length ? tokens.map((t) => html`<a href="${tokenUrl(cfg, t.token_address)}">$${t.ticker}</a> `) : "none yet"}</p>
       ${rows.length === 0 ? html`<div class="card muted">No fees for this account yet. Fees are collected from the pools regularly.</div>` : html`
       <div class="scroll"><table><tr><th>Asset</th><th class="num">Total fee</th><th class="num">Your share</th><th class="num">LONGSHOT share</th><th class="num">Paid out</th><th class="num">Claimable</th></tr>${rows}</table></div>`}
-      ${anyClaimable ? html`
-      <form class="card" method="post" action="/claim">
-        <label for="to" class="muted">Receiving wallet (Robinhood Chain / EVM)</label>
-        <p><input id="to" type="text" name="to" placeholder="0x…" required pattern="0x[0-9a-fA-F]{40}" autocomplete="off"></p>
-        <input type="hidden" name="csrf" value="${csrfFor(s.uid)}">
-        <div class="row">
-          <button class="btn" type="submit" name="mode" value="claim">Claim all</button>
-          ${burnable.length ? html`<button class="btn burn-btn" type="submit" name="mode" value="burn">Claim &amp; Burn 🔥</button>` : raw("")}
+      <form method="post" action="/claim" class="claim-form">
+        <div class="card">
+          <label for="to" class="muted">Receiving wallet (Robinhood Chain / EVM)</label>
+          <p><input id="to" type="text" name="to" placeholder="0x…" required pattern="0x[0-9a-fA-F]{40}" autocomplete="off" ${anyClaimable ? "" : raw("disabled")}></p>
+          <input type="hidden" name="csrf" value="${csrfFor(s.uid)}">
+          <p class="muted small">Double-check the address — on-chain transfers cannot be reversed.</p>
         </div>
-        ${burnable.length ? html`<p class="muted"><b>Claim &amp; Burn:</b> your stock rewards still go to your wallet, but your rewards paid in your own token (${burnList.join(", ")}) are sent to the burn address <span class="mono nowrap">${shortAddr(BURN_ADDRESS)}</span> and destroyed forever — shrinking your token's supply. This cannot be undone.</p>` : raw("")}
-        <p class="muted">Double-check the address — on-chain transfers cannot be reversed.</p>
-      </form>` : raw("")}
+        <div class="claim-options">
+          <div class="opt">
+            <b>Claim fees</b>
+            <p>Send all your rewards — the paired stock and your own token — to your wallet.</p>
+            <button class="btn" type="submit" name="mode" value="claim" ${anyClaimable ? "" : raw("disabled")}>Claim fees</button>
+          </div>
+          <div class="opt burn">
+            <b>Claim &amp; burn supply 🔥</b>
+            <p>Your stock rewards go to your wallet. Your rewards paid in your own token${burnable.length ? html` (${burnList.join(", ")})` : raw("")} are burned forever at <span class="mono nowrap">${shortAddr(BURN_ADDRESS)}</span>, shrinking your token's supply. Cannot be undone.</p>
+            <button class="btn burn-btn" type="submit" name="mode" value="burn" ${burnable.length ? "" : raw("disabled")}>Claim &amp; burn supply</button>
+            ${burnable.length ? raw("") : html`<p class="muted small">Nothing to burn yet — appears once your token earns fees in its own token.</p>`}
+          </div>
+        </div>
+        ${anyClaimable ? raw("") : html`<p class="muted">Nothing to claim yet. Fees are collected from the pools regularly.</p>`}
+      </form>
     `));
   });
 

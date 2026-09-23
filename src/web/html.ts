@@ -95,6 +95,14 @@ h3{font-size:16px;margin:24px 0 10px}
 .nowrap{white-space:nowrap;word-break:normal}
 .burn-tag{font-size:12px;color:var(--burn);white-space:nowrap}
 .btn.burn-btn{background:var(--burn);color:var(--burn-ink)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.claim-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+@media (max-width:640px){.claim-options{grid-template-columns:1fr}}
+.opt{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:6px}
+.opt b{font-size:17px}
+.opt p{margin:0 0 8px;color:var(--muted);font-size:14px}
+.opt .btn{align-self:flex-start;margin-top:auto}
+.opt.burn{border-color:color-mix(in srgb,var(--burn) 45%,var(--line))}
 @media (max-width:760px){.rewards-now{grid-template-columns:1fr}}
 .small{font-size:12px}
 .seg{display:block;min-width:4px}
