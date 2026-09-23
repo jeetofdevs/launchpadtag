@@ -4,6 +4,7 @@
 > Launch token di [Long.xyz](https://app.long.xyz/) langsung dari X (Twitter), cukup dengan satu tweet yang men-tag **@longdotxyz**. Tanpa buka web, tanpa connect wallet dulu.
 
 > 🚀 **Mau langsung coba?** Lompat ke [Menjalankan LONGSHOT](#9-menjalankan-longshot).
+> ☁️ **Deploy ke server?** Ikuti [panduan Railway langkah demi langkah](DEPLOY-RAILWAY.md).
 
 ---
 

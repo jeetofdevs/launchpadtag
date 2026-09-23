@@ -40,7 +40,10 @@ export function loadConfig() {
 
   return {
     dbPath: env("DB_PATH", "data/longshot.db"),
-    publicUrl: env("PUBLIC_URL", "http://localhost:8787"),
+    // Railway exposes the generated domain as RAILWAY_PUBLIC_DOMAIN.
+    publicUrl: (process.env.PUBLIC_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : "http://localhost:8787")).replace(/\/$/, ""),
+    /** "Login as test user" on /claim. Only ever allowed in mock mode. */
+    allowDevLogin: process.env.ALLOW_DEV_LOGIN === "true" || (!process.env.RAILWAY_ENVIRONMENT && process.env.NODE_ENV !== "production"),
     port: int("PORT", 8787),
     sessionSecret: env("SESSION_SECRET", "dev-only-change-me"),
 
@@ -70,7 +73,8 @@ export function loadConfig() {
       rpcUrl: env("RPC_URL", "https://rpc.mainnet.chain.robinhood.com"),
       chainId: int("CHAIN_ID", 4663),
       explorerUrl: env("EXPLORER_URL", "https://robinhoodchain.blockscout.com"),
-      treasuryPrivateKey: (process.env.TREASURY_PRIVATE_KEY ?? "") as Hex,
+      // MetaMask exports keys without the 0x prefix; accept both.
+      treasuryPrivateKey: ((k) => (k && !k.startsWith("0x") ? `0x${k}` : k))((process.env.TREASURY_PRIVATE_KEY ?? "").trim()) as Hex,
       defaultStock: env("DEFAULT_STOCK", "NVDA") as Stock,
       stockTokens,
       /** Doppler pool swap fee in hundredths of a bip (10000 = 1%). Must be > 0 for beneficiaries to earn. */

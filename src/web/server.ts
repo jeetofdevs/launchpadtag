@@ -25,7 +25,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient) {
   const app = new Hono();
   const secret = cfg.sessionSecret;
   const secureCookie = cfg.publicUrl.startsWith("https://");
-  const devLogin = cfg.chain.mode === "mock" && !cfg.x.oauthClientId;
+  const devLogin = cfg.chain.mode === "mock" && !cfg.x.oauthClientId && cfg.allowDevLogin;
 
   const csrfFor = (uid: string) => createHmac("sha256", secret).update(`csrf:${uid}`).digest("hex");
   const csrfOk = (uid: string, token: string) => {
@@ -61,6 +61,8 @@ export function createApp(cfg: Config, db: DB, long: LongClient) {
   }
 
   const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
+
+  app.get("/healthz", (c) => c.json({ ok: true, chain: cfg.chain.mode, x: cfg.x.enabled }));
 
   // ── Landing ────────────────────────────────────────────────────────────────
   app.get("/", (c) => {

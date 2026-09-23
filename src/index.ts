@@ -10,12 +10,12 @@ import { ConsoleReplier, XMentionSource, XReplier } from "./x/client.ts";
 const log = (m: string) => console.log(`[${new Date().toISOString()}] ${m}`);
 
 const cfg = loadConfig();
-if (cfg.sessionSecret === "dev-only-change-me" && cfg.chain.mode === "onchain")
-  throw new Error("Set SESSION_SECRET before running onchain");
+if (cfg.sessionSecret === "dev-only-change-me" && (cfg.chain.mode === "onchain" || process.env.RAILWAY_ENVIRONMENT))
+  throw new Error("Set SESSION_SECRET (a long random string) before deploying");
 
 const db = openDb(cfg.dbPath);
 const long = createLongClient(cfg.chain);
-log(`LONGSHOT starting — chain=${cfg.chain.mode}, treasury=${long.treasury}, x=${cfg.x.enabled ? "on" : "off"}`);
+log(`LONGSHOT starting — chain=${cfg.chain.mode}, treasury=${long.treasury}, x=${cfg.x.enabled ? "on" : "off"}, url=${cfg.publicUrl}, db=${cfg.dbPath}`);
 
 /** Run `fn` every `ms`, never overlapping with itself. */
 function every(ms: number, name: string, fn: () => Promise<unknown>) {
