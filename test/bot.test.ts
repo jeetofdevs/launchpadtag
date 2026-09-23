@@ -71,3 +71,15 @@ test("pairing with a stock that isn't a Long.xyz market is refused with a pointe
   assert.equal(r.kind, "rejected");
   assert.match(d.replier.sent[0].text, /\$ZZZZ is not a stock you can pair with — see .*\/stocks/);
 });
+
+test("X errors are explained without leaking keys", async () => {
+  const { ApiResponseError } = await import("twitter-api-v2");
+  const { describeXError } = await import("../src/x/client.ts");
+  const e = new ApiResponseError("Request failed with code 401", {
+    code: 401, data: { title: "Unauthorized", detail: "Unauthorized" } as never,
+    request: {} as never, response: { headers: {} } as never, headers: {},
+  } as never);
+  const msg = describeXError(e);
+  assert.match(msg, /^X 401: Unauthorized/);
+  assert.match(msg, /regenerate the Access Token AFTER the Consumer Key/);
+});

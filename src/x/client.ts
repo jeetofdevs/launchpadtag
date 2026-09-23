@@ -1,4 +1,4 @@
-import { TwitterApi, type TweetV2, type TwitterV2IncludesHelper } from "twitter-api-v2";
+import { ApiResponseError, TwitterApi, type TweetV2, type TwitterV2IncludesHelper } from "twitter-api-v2";
 import type { Mention, Replier } from "../bot.ts";
 import type { Config } from "../config.ts";
 import { getKv, setKv, type DB } from "../db.ts";
@@ -9,6 +9,25 @@ function firstPhoto(includes: TwitterV2IncludesHelper, tweet: TweetV2 | undefine
   if (!tweet) return undefined;
   const photo = includes.medias(tweet).find((m) => m.type === "photo");
   return photo?.url;
+}
+
+/**
+ * "Request failed with code 401" alone doesn't say what's wrong; X puts the reason in the body.
+ * Never includes keys: only the status code and X's own title/detail/errors.
+ */
+export function describeXError(e: unknown): string {
+  if (e instanceof ApiResponseError) {
+    const d = (e.data ?? {}) as { title?: string; detail?: string; reason?: string; errors?: { message?: string; code?: number }[] };
+    const parts = [d.title, d.detail, d.reason, ...(d.errors ?? []).map((x) => `${x.code ?? ""} ${x.message ?? ""}`.trim())].filter(Boolean);
+    const hint =
+      e.code === 401 ? " → X_APP_KEY/X_APP_SECRET and X_ACCESS_TOKEN/X_ACCESS_SECRET don't match: regenerate the Access Token AFTER the Consumer Key, from the same app."
+      : e.code === 403 ? " → the token can't post: set app permissions to Read and write, then regenerate the Access Token."
+      : e.code === 402 ? " → no API credits left on the X developer account."
+      : e.code === 429 ? " → X rate limit; it will retry later."
+      : "";
+    return `X ${e.code}: ${parts.join(" | ") || e.message}${hint}`;
+  }
+  return e instanceof Error ? e.message : String(e);
 }
 
 /** Posts replies from the LONGSHOT bot account (OAuth 1.0a user context). */
@@ -25,7 +44,11 @@ export class XReplier implements Replier {
     return me.data.username;
   }
   async reply(toTweetId: string, text: string) {
-    await this.client.v2.reply(text.slice(0, 280), toTweetId);
+    try {
+      await this.client.v2.reply(text.slice(0, 280), toTweetId);
+    } catch (e) {
+      throw new Error(describeXError(e));
+    }
   }
 }
 

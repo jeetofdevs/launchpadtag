@@ -7,7 +7,7 @@ import { loadConfig } from "./config.ts";
 import { getKv, openDb, setKv } from "./db.ts";
 import { harvestFees } from "./harvester.ts";
 import { createApp } from "./web/server.ts";
-import { ConsoleReplier, XMentionSource, XReplier } from "./x/client.ts";
+import { ConsoleReplier, XMentionSource, XReplier, describeXError } from "./x/client.ts";
 
 const log = (m: string) => console.log(`[${new Date().toISOString()}] ${m}`);
 
@@ -69,7 +69,7 @@ if (cfg.x.enabled) {
     (u) => log(u.toLowerCase() === cfg.x.botHandle.toLowerCase()
       ? `X bot: replies will be posted as @${u}; listening for @${cfg.x.triggerHandle} every ${cfg.x.pollIntervalMs / 1000}s`
       : `X bot WARNING: the access token belongs to @${u}, not @${cfg.x.botHandle}. Regenerate X_ACCESS_TOKEN/X_ACCESS_SECRET while logged in as @${cfg.x.botHandle}.`),
-    (e) => log(`X bot: key check failed (${e instanceof Error ? e.message : e}) — check X_APP_KEY/SECRET and X_ACCESS_TOKEN/SECRET.`),
+    (e) => log(`X bot: key check failed — ${describeXError(e)}`),
   );
   every(cfg.x.pollIntervalMs, "mentions", async () => {
     const { mentions, newestId } = await source.fetchNew();
