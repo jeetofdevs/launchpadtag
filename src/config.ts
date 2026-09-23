@@ -3,6 +3,20 @@ import type { Address, Hex } from "viem";
 export const STOCKS = ["NVDA", "AAPL", "MSFT", "GOOGL", "TSLA", "MU", "SPCX"] as const;
 export type Stock = (typeof STOCKS)[number];
 
+/**
+ * Robinhood Stock Tokens on Robinhood Chain (4663), from the 0xsequence token directory
+ * (index/robinhood/erc20.json). Override with STOCK_TOKEN_<SYMBOL>.
+ */
+export const DEFAULT_STOCK_TOKENS: Record<Stock, Address> = {
+  NVDA: "0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC",
+  AAPL: "0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9",
+  MSFT: "0xe93237C50D904957Cf27E7B1133b510C669c2e74",
+  GOOGL: "0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3",
+  TSLA: "0x322F0929c4625eD5bAd873c95208D54E1c003b2d",
+  MU: "0xfF080c8ce2E5feadaCa0Da81314Ae59D232d4afD",
+  SPCX: "0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa",
+};
+
 /** Fee split in basis points. Deployer gets 80%, LONGSHOT Treasury keeps 20%. */
 export const DEPLOYER_SHARE_BPS = 8000n;
 export const BPS = 10000n;
@@ -21,7 +35,7 @@ function int(name: string, fallback: number): number {
 export function loadConfig() {
   const chainMode = env("CHAIN_MODE", "mock") as "mock" | "onchain";
   const stockTokens = Object.fromEntries(
-    STOCKS.map((s) => [s, (process.env[`STOCK_TOKEN_${s}`] ?? "") as Address]),
+    STOCKS.map((s) => [s, (process.env[`STOCK_TOKEN_${s}`] || DEFAULT_STOCK_TOKENS[s]) as Address]),
   ) as Record<Stock, Address>;
 
   return {
@@ -53,19 +67,22 @@ export function loadConfig() {
 
     chain: {
       mode: chainMode,
-      rpcUrl: process.env.RPC_URL ?? "",
-      chainId: int("CHAIN_ID", 0),
-      explorerUrl: process.env.EXPLORER_URL ?? "",
+      rpcUrl: env("RPC_URL", "https://rpc.mainnet.chain.robinhood.com"),
+      chainId: int("CHAIN_ID", 4663),
+      explorerUrl: env("EXPLORER_URL", "https://robinhoodchain.blockscout.com"),
       treasuryPrivateKey: (process.env.TREASURY_PRIVATE_KEY ?? "") as Hex,
-      longFactory: (process.env.LONG_FACTORY_ADDRESS ?? "") as Address,
       defaultStock: env("DEFAULT_STOCK", "NVDA") as Stock,
       stockTokens,
+      /** Doppler pool swap fee in hundredths of a bip (10000 = 1%). Must be > 0 for beneficiaries to earn. */
+      poolFee: int("POOL_FEE", 10_000),
+      /** Share of pool fees routed to the Doppler protocol owner (min 5%); the rest goes to the Treasury. */
+      protocolShareBps: BigInt(process.env.PROTOCOL_SHARE_BPS ?? "500"),
       harvestIntervalMs: int("HARVEST_INTERVAL_MS", 15 * 60_000),
       /** Refuse any single claim payout above this (base units, 0 = no cap). */
       maxPayoutPerClaim: BigInt(process.env.MAX_PAYOUT_PER_CLAIM ?? "0"),
     },
 
-    longAppUrl: env("LONG_APP_URL", "https://app.longxyz.com"),
+    longAppUrl: env("LONG_APP_URL", "https://app.long.xyz"),
     pinataJwt: process.env.PINATA_JWT ?? "",
   };
 }

@@ -15,9 +15,11 @@ export async function harvestFees(db: DB, long: LongClient, log: (m: string) => 
     try {
       const res = await long.claimCreatorFees(t.token_address, t.stock);
       if (!res) continue;
-      recordFee(db, { tokenAddress: t.token_address, xUserId: t.x_user_id, asset: res.asset, amount: res.amount, txHash: res.txHash });
+      for (const f of res.fees) {
+        recordFee(db, { tokenAddress: t.token_address, xUserId: t.x_user_id, asset: f.asset, amount: f.amount, txHash: res.txHash });
+        log(`harvested $${t.ticker}: ${f.amount} of ${f.asset} (${res.txHash})`);
+      }
       harvested++;
-      log(`harvested $${t.ticker}: ${res.amount} (${res.txHash})`);
     } catch (e) {
       if (e instanceof BroadcastUncertainError) {
         // Fees may have landed in the Treasury without being booked to the deployer. Must be reconciled by hand.

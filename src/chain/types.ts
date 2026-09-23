@@ -18,16 +18,22 @@ export interface CreateTokenParams {
   metadataUri: string;
 }
 
-/** Everything LONGSHOT needs from Long.xyz + the chain, all signed by the Treasury wallet. */
+export interface FeeClaim {
+  txHash: Hex;
+  /** What actually arrived in the Treasury, per asset (Doppler pays both sides of the pool). */
+  fees: { asset: Address; amount: bigint }[];
+}
+
+/** Everything LONGSHOT needs from the launchpad + the chain, all signed by the Treasury wallet. */
 export interface LongClient {
   readonly treasury: Address;
-  /** ERC-20 the creator fee of a token paired with `stock` is paid in. */
-  feeAsset(stock: Stock): Address;
+  /** Stock Token a launch paired with `stock` trades against. */
+  stockToken(stock: Stock): Address;
   /** Symbol + decimals of an ERC-20, for display. */
   assetInfo(asset: Address): Promise<{ symbol: string; decimals: number }>;
   createToken(p: CreateTokenParams): Promise<{ tokenAddress: Address; txHash: Hex }>;
-  /** Claim accrued creator fees for `token` into the Treasury. Returns null when nothing accrued. */
-  claimCreatorFees(token: Address, stock: Stock): Promise<{ asset: Address; amount: bigint; txHash: Hex } | null>;
+  /** Claim the Treasury's beneficiary fees for `token`. Returns null when nothing accrued. */
+  claimCreatorFees(token: Address, stock: Stock): Promise<FeeClaim | null>;
   /** Send `amount` of ERC-20 `asset` from the Treasury to `to`. */
   transfer(asset: Address, to: Address, amount: bigint): Promise<Hex>;
   txUrl(hash: string): string;

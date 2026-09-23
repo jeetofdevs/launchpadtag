@@ -18,34 +18,42 @@ test("split is 80% deployer / 20% treasury, no dust lost", () => {
 
 async function launched(fee = 1000n) {
   const d = setup(fee);
-  await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $FEE", author: author() });
-  return d;
+  const res = await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $FEE paired $TSLA", author: author() });
+  if (res.kind !== "live") throw new Error("launch failed");
+  const stock = d.long.stockToken("TSLA").toLowerCase();
+  const token = res.tokenAddress.toLowerCase();
+  /** Balance of the deployer ("42") in one asset. */
+  const bal = (asset: string) => balances(d.db, "42").find((b) => b.asset === asset)!;
+  const paidIn = (asset: string) =>
+    d.long.transfers.filter((t) => t.asset.toLowerCase() === asset).reduce((a, t) => a + t.amount, 0n);
+  return { ...d, stock, token, bal, paidIn };
 }
 
-test("harvest books fees; claim pays exactly 80% once", async () => {
+test("harvest books both pool assets; claim pays exactly 80% of each, once", async () => {
   const d = await launched(1000n);
   await harvestFees(d.db, d.long);
   await harvestFees(d.db, d.long);
-  const [b] = balances(d.db, "42");
-  assert.equal(b.totalFees, 2000n);
-  assert.equal(b.claimable, 1600n);
+  assert.equal(d.bal(d.stock).totalFees, 2000n);
+  assert.equal(d.bal(d.stock).claimable, 1600n);
+  assert.equal(d.bal(d.token).totalFees, 20000n); // mock pays 10x in the launched token
+  assert.equal(d.bal(d.token).claimable, 16000n);
 
   const r1 = await claimAll(d.db, d.long, "42", TO, 0n);
-  assert.equal(r1[0].amount, 1600n);
-  assert.equal(d.long.transfers.length, 1);
-  assert.equal(d.long.transfers[0].amount, 1600n);
+  assert.equal(r1.length, 2);
+  assert.equal(d.paidIn(d.stock), 1600n);
+  assert.equal(d.paidIn(d.token), 16000n);
 
   const r2 = await claimAll(d.db, d.long, "42", TO, 0n);
   assert.equal(r2.length, 0);
-  assert.equal(d.long.transfers.length, 1);
+  assert.equal(d.long.transfers.length, 2);
 });
 
 test("concurrent claims cannot double-pay", async () => {
   const d = await launched(1000n);
   await harvestFees(d.db, d.long);
   await Promise.all([claimAll(d.db, d.long, "42", TO, 0n), claimAll(d.db, d.long, "42", TO, 0n)]);
-  const paid = d.long.transfers.reduce((a, t) => a + t.amount, 0n);
-  assert.equal(paid, 800n);
+  assert.equal(d.paidIn(d.stock), 800n);
+  assert.equal(d.paidIn(d.token), 8000n);
 });
 
 test("failed transfer releases the balance for retry", async () => {
@@ -54,11 +62,12 @@ test("failed transfer releases the balance for retry", async () => {
   const orig = d.long.transfer.bind(d.long);
   d.long.transfer = async () => { throw new Error("reverted"); };
   const r = await claimAll(d.db, d.long, "42", TO, 0n);
-  assert.ok(r[0].error);
-  assert.equal(balances(d.db, "42")[0].claimable, 800n);
+  assert.ok(r.every((x) => x.error));
+  assert.equal(d.bal(d.stock).claimable, 800n);
   d.long.transfer = orig;
   await claimAll(d.db, d.long, "42", TO, 0n);
-  assert.equal(balances(d.db, "42")[0].claimable, 0n);
+  assert.equal(d.bal(d.stock).claimable, 0n);
+  assert.equal(d.bal(d.token).claimable, 0n);
 });
 
 test("unconfirmed transfer keeps the balance locked (no double pay)", async () => {
@@ -66,14 +75,14 @@ test("unconfirmed transfer keeps the balance locked (no double pay)", async () =
   await harvestFees(d.db, d.long);
   d.long.transfer = async () => { throw new BroadcastUncertainError("0xabc", new Error("timeout")); };
   await claimAll(d.db, d.long, "42", TO, 0n);
-  assert.equal(balances(d.db, "42")[0].claimable, 0n);
+  assert.equal(d.bal(d.stock).claimable, 0n);
 });
 
 test("per-claim cap pays in chunks", async () => {
   const d = await launched(1000n);
   await harvestFees(d.db, d.long);
   await claimAll(d.db, d.long, "42", TO, 300n);
-  assert.equal(balances(d.db, "42")[0].claimable, 500n);
+  assert.equal(d.bal(d.stock).claimable, 500n);
 });
 
 test("other users cannot see or claim someone's fees", async () => {

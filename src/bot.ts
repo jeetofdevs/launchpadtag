@@ -39,7 +39,7 @@ function short(addr: string) {
 }
 
 export function tokenUrl(cfg: Config, tokenAddress: string) {
-  return `${cfg.longAppUrl}/token/${tokenAddress}`;
+  return `${cfg.longAppUrl}/tokens/${tokenAddress}`;
 }
 
 /** Handle one tweet that tags the trigger handle. Safe to call repeatedly for the same tweet. */

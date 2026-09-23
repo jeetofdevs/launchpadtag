@@ -1,7 +1,7 @@
 # LONGSHOT — Launch Token Cukup dengan Tag @longdotxyz
 
 > **"One tweet. One token."**
-> Launch token di [Long.xyz](https://app.longxyz.com/) langsung dari X (Twitter), cukup dengan satu tweet yang men-tag **@longdotxyz**. Tanpa buka web, tanpa connect wallet dulu.
+> Launch token di [Long.xyz](https://app.long.xyz/) langsung dari X (Twitter), cukup dengan satu tweet yang men-tag **@longdotxyz**. Tanpa buka web, tanpa connect wallet dulu.
 
 > 🚀 **Mau langsung coba?** Lompat ke [Menjalankan LONGSHOT](#9-menjalankan-longshot).
 
@@ -68,7 +68,7 @@ Kenapa ini menarik:
                     6. Simpan creator = X handle ◀── tx hash + contract address
  ◀── Reply bot   7. Reply tweet:
                     "✅ $X live! CA: 0x...
-                     Auction: longxyz.com/t/0x..."
+                     Auction: app.long.xyz/tokens/0x..."
 ```
 
 Balasan bot contoh:
@@ -78,7 +78,7 @@ Balasan bot contoh:
 📈 Paired: $TSLA
 📜 CA: 0x1234…abcd
 ⏱ Fair auction berjalan — no snipers
-🔗 app.longxyz.com/token/0x1234…abcd
+🔗 app.long.xyz/tokens/0x1234…abcd
 👤 Creator: @username — claim fee di longshot.xyz/claim
 ```
 
@@ -212,20 +212,47 @@ Mode default `CHAIN_MODE=mock` memakai Long.xyz tiruan, jadi semuanya bisa dicob
 | `src/validate.ts` | Anti-spam: umur akun, followers, rate limit, blacklist ticker, cooldown ticker |
 | `src/bot.ts` | Pipeline satu tweet: validasi → metadata → deploy → reply (idempotent per tweet ID) |
 | `src/x/client.ts` | X API: recent search untuk tag, reply dari akun bot |
-| `src/chain/onchain.ts` | Transaksi dari **LONGSHOT Treasury** (viem): deploy, claim fee, transfer ERC-20 |
+| `src/chain/onchain.ts` | Transaksi dari **LONGSHOT Treasury** via Doppler SDK: deploy multicurve, klaim fee beneficiary, transfer ERC-20 |
 | `src/chain/mock.ts` | Long.xyz tiruan untuk dev/test |
 | `src/harvester.ts` | Claim creator fee semua token ke Treasury secara berkala, dibukukan 80/20 |
 | `src/ledger.ts` | Ledger fee & payout; reservasi atomik supaya tidak bisa double-claim |
 | `src/claim.ts` | Kirim 80% ke wallet deployer |
 | `src/web/server.ts` | Landing, `/claim` (login X OAuth2), `/fees` (transparansi), `/meta/:id.json` |
 
+### Integrasi on-chain (hasil riset)
+
+Long.xyz berjalan di atas **[Doppler Protocol](https://github.com/Long-xyz/longxyz-doppler)** di **Robinhood Chain (chain ID 4663)**. Launch di Long.xyz adalah pool *multicurve* Doppler yang dipasangkan ke Stock Token, dan creator fee dialirkan ke alamat **beneficiary** yang ditetapkan saat launch. Pihak ketiga seperti LONGETF sudah memakai pola yang sama: beneficiary-nya vault mereka, bukan wallet creator. Itu persis model LONGSHOT Treasury.
+
+`src/chain/onchain.ts` memakai SDK resmi `@whetstone-research/doppler-sdk`:
+
+- **Deploy**: `MulticurveBuilder` → token dipasangkan ke Stock Token, fee pool 1%, beneficiary = protocol owner Doppler (minimum 5%) + **LONGSHOT Treasury (95%)**, migrasi `noOp` supaya pool tetap terkunci dan fee terus mengalir.
+- **Klaim fee**: `getMulticurvePool(token).collectFees()` dari Treasury. Fee masuk dalam **dua aset**: Stock Token pasangannya **dan** token yang di-launch. Keduanya dibukukan 80/20 dan dibayarkan ke deployer.
+- Jumlah fee dihitung dari selisih saldo Treasury sebelum/sesudah klaim, dijalankan bergantian dengan payout (mutex) supaya angkanya tidak tercampur.
+
+| Kontrak | Alamat | Sumber |
+|---|---|---|
+| LongLauncher (Long.xyz) | `0x22e99278308B393ea1260859B181AD7E78f5eeED` | [stock-pair-alerts](https://github.com/Wayakart/stock-pair-alerts), Bitquery |
+| Doppler Airlock | `0xeb7C034704eF8Dcd2D32324c1545f62fB4aD0862` | Doppler SDK 1.0.43 |
+| Doppler DopplerHookInitializer | `0x4e3468951D49f2EEa976eD0D6e75fFCb44a9a544` | Doppler SDK 1.0.43 |
+| NVDA | `0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC` | [0xsequence token-directory](https://github.com/0xsequence/token-directory) |
+| AAPL | `0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9` | token-directory |
+| MSFT | `0xe93237C50D904957Cf27E7B1133b510C669c2e74` | token-directory |
+| GOOGL | `0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3` | token-directory |
+| TSLA | `0x322F0929c4625eD5bAd873c95208D54E1c003b2d` | token-directory |
+| MU | `0xfF080c8ce2E5feadaCa0Da81314Ae59D232d4afD` | token-directory |
+| SPCX | `0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa` | token-directory |
+
+> ⚠️ **Domain resmi Long.xyz adalah `long.xyz`** (`app.long.xyz`). Hasil pencarian juga memunculkan `app.longxyz.com`, yang tampaknya **bukan** domain resmi. Jangan connect wallet Treasury ke sana.
+
+### Yang belum terverifikasi
+
+1. **Muncul di app.long.xyz?** Token yang dibuat langsung lewat Doppler memakai infrastruktur yang sama dengan Long.xyz, tapi Long.xyz mendata launch dari event `LaunchCreated` di **LongLauncher**. Kalau token harus tampil di feed Long.xyz, deploy perlu lewat LongLauncher. ABI-nya belum publik, jadi cek tab *Contract* di [Blockscout](https://robinhoodchain.blockscout.com/address/0x22e99278308B393ea1260859B181AD7E78f5eeED) atau minta ke tim @longdotxyz. Cukup ganti `createToken()`, klaim fee tetap sama.
+2. **Parameter kurva** memakai preset market cap SDK. Sesuaikan dengan parameter launch Long.xyz kalau ingin kurva harga yang sama.
+3. Semua alamat di atas diambil dari sumber publik; RPC Robinhood Chain tidak bisa diakses dari environment build ini, jadi **uji dulu dengan dana kecil**.
+
 ### Menuju produksi (`CHAIN_MODE=onchain`)
 
-1. **ABI Long.xyz** — `src/chain/longAbi.ts` masih berisi signature **asumsi** (`createToken`, `claimCreatorFees`). Ganti dengan ABI & alamat factory asli dari tim @longdotxyz / explorer, lalu sesuaikan `OnchainLongClient`.
-2. **Aset fee** — diasumsikan creator fee dibayar dalam Stock Token pasangannya (`STOCK_TOKEN_*`). Sesuaikan `feeAsset()` kalau ternyata dalam ETH/aset lain.
-3. **Robinhood Chain** — isi `RPC_URL`, `CHAIN_ID`, `EXPLORER_URL`.
-4. **Treasury** — isi `TREASURY_PRIVATE_KEY` dengan hot wallet bersaldo kecil (idealnya dari KMS), set `MAX_PAYOUT_PER_CLAIM`, dan pantau log `RECONCILE:` (transaksi terkirim tapi belum terkonfirmasi — saldo dikunci sampai dicek manual).
-5. **X API** — plan dengan akses *recent search*, akun bot (mis. `@longshotbot`) untuk reply, dan OAuth 2.0 client untuk login di `/claim`. Set `X_ENABLED=true`.
-6. **Deploy** — satu proses Node (`npm start`) + volume persisten untuk `DB_PATH`. Pasang di belakang HTTPS dan set `SESSION_SECRET`.
-
-> ⚠️ Alamat kontrak, struktur fee, dan API Long.xyz perlu dikonfirmasi dengan tim @longdotxyz sebelum dipakai dengan dana sungguhan.
+1. **Treasury** — isi `TREASURY_PRIVATE_KEY` dengan hot wallet bersaldo kecil (idealnya dari KMS), isi ETH untuk gas, set `MAX_PAYOUT_PER_CLAIM`, dan pantau log `RECONCILE:` (transaksi terkirim tapi belum terkonfirmasi — saldo dikunci sampai dicek manual).
+2. **X API** — plan dengan akses *recent search*, akun bot (mis. `@longshotbot`) untuk reply, dan OAuth 2.0 client untuk login di `/claim`. Set `X_ENABLED=true`.
+3. **Deploy** — satu proses Node (`npm start`) + volume persisten untuk `DB_PATH`. Pasang di belakang HTTPS dan set `SESSION_SECRET`.
+4. **Uji coba** — launch 1 token dengan akun sendiri, trading kecil, tunggu harvest, lalu claim, sebelum dibuka ke publik.

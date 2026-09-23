@@ -7,31 +7,41 @@ const rand = (n: number) => `0x${randomBytes(n).toString("hex")}` as const;
 
 /**
  * In-memory stand-in for Long.xyz so the whole bot → fee → claim loop can run locally.
- * Each harvest pretends the token earned `feePerHarvest` of fees.
+ * Each harvest pretends the pool earned `feePerHarvest` of the Stock Token and 10× that of the launched token.
  */
 export class MockLongClient implements LongClient {
   readonly treasury: Address = rand(20) as Address;
-  private readonly assets = Object.fromEntries(STOCKS.map((s) => [s, rand(20)])) as Record<Stock, Address>;
+  private readonly stocks = Object.fromEntries(STOCKS.map((s) => [s, rand(20)])) as Record<Stock, Address>;
+  private readonly tokens = new Map<string, string>();
   readonly transfers: { asset: Address; to: Address; amount: bigint; txHash: Hex }[] = [];
 
   constructor(private readonly feePerHarvest = 1_000_000n) {}
 
-  feeAsset(stock: Stock): Address {
-    return this.assets[stock];
+  stockToken(stock: Stock): Address {
+    return this.stocks[stock];
   }
 
   async assetInfo(asset: Address) {
-    const stock = STOCKS.find((s) => this.assets[s].toLowerCase() === asset.toLowerCase());
-    return { symbol: stock ? `${stock}x` : "TOKEN", decimals: 6 };
+    const stock = STOCKS.find((s) => this.stocks[s].toLowerCase() === asset.toLowerCase());
+    if (stock) return { symbol: stock, decimals: 6 };
+    return { symbol: this.tokens.get(asset.toLowerCase()) ?? "TOKEN", decimals: 6 };
   }
 
-  async createToken(_p: CreateTokenParams) {
-    return { tokenAddress: rand(20) as Address, txHash: rand(32) as Hex };
+  async createToken(p: CreateTokenParams) {
+    const tokenAddress = rand(20) as Address;
+    this.tokens.set(tokenAddress.toLowerCase(), p.symbol);
+    return { tokenAddress, txHash: rand(32) as Hex };
   }
 
-  async claimCreatorFees(_token: Address, stock: Stock) {
+  async claimCreatorFees(token: Address, stock: Stock) {
     if (this.feePerHarvest <= 0n) return null;
-    return { asset: this.assets[stock], amount: this.feePerHarvest, txHash: rand(32) as Hex };
+    return {
+      txHash: rand(32) as Hex,
+      fees: [
+        { asset: this.stocks[stock], amount: this.feePerHarvest },
+        { asset: token, amount: this.feePerHarvest * 10n },
+      ],
+    };
   }
 
   async transfer(asset: Address, to: Address, amount: bigint) {

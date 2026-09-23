@@ -34,11 +34,14 @@ console.log("result:", res.kind, "\n");
 if (res.kind !== "live") process.exit(0);
 
 await harvestFees(db, long, (m) => console.log(m));
-const [bal] = balances(db, author.id);
-const { symbol, decimals } = await long.assetInfo(bal.asset as `0x${string}`);
-const f = (v: bigint) => `${formatUnits(v, decimals)} ${symbol}`;
-console.log(`\nfees: total ${f(bal.totalFees)} → deployer ${f(bal.deployerShare)} / treasury ${f(bal.treasuryShare)}`);
+const f = async (asset: string, v: bigint) => {
+  const { symbol, decimals } = await long.assetInfo(asset as `0x${string}`);
+  return `${formatUnits(v, decimals)} ${symbol}`;
+};
+console.log("");
+for (const b of balances(db, author.id))
+  console.log(`fees: total ${await f(b.asset, b.totalFees)} → deployer ${await f(b.asset, b.deployerShare)} / treasury ${await f(b.asset, b.treasuryShare)}`);
 
-const payout = await claimAll(db, long, author.id, "0x000000000000000000000000000000000000dEaD", 0n);
-console.log(`claim: sent ${f(payout[0].amount)} to deployer (tx ${payout[0].txHash})`);
-console.log(`claimable after claim: ${f(balances(db, author.id)[0].claimable)}`);
+for (const p of await claimAll(db, long, author.id, "0x000000000000000000000000000000000000dEaD", 0n))
+  console.log(`claim: sent ${await f(p.asset, p.amount)} to deployer (tx ${p.txHash?.slice(0, 18)}…)`);
+for (const b of balances(db, author.id)) console.log(`claimable after claim: ${await f(b.asset, b.claimable)}`);
