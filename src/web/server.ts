@@ -506,6 +506,10 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     if (!csrfOk(s.uid, String(form.csrf ?? ""))) return c.text("Session expired, please reload the page.", 403);
     const to = String(form.to ?? "").trim();
     if (!isAddress(to) || to.toLowerCase() === zeroAddress) return redirectWithFlash(c, "That wallet address is not valid.");
+    // Paying to the Treasury itself or the burn address would mark the rewards as paid while the user gets nothing.
+    if (to.toLowerCase() === long.treasury.toLowerCase() || to.toLowerCase() === BURN_ADDRESS.toLowerCase()) {
+      return redirectWithFlash(c, "Enter your own wallet address. To burn, use the Claim & burn supply button.");
+    }
 
     const burn = String(form.mode ?? "") === "burn";
     const results = await claimAll(db, long, s.uid, getAddress(to), cfg.chain.maxPayoutPerClaim, { burn });

@@ -125,3 +125,18 @@ test("a normal claim never burns", async () => {
   await claimAll(d.db, d.long, "42", TO, 0n);
   assert.ok(d.long.transfers.every((t) => t.to === TO));
 });
+
+test("a transfer that fails (e.g. reverted) releases the balance so it can be claimed again", async () => {
+  const { balances } = await import("../src/ledger.ts");
+  const d = await launched(1000n);
+  await harvestFees(d.db, d.long);
+  const real = d.long.transfer.bind(d.long);
+  d.long.transfer = async () => { throw new Error("transfer reverted: 0xabc"); };
+  const failed = await claimAll(d.db, d.long, "42", TO, 0n);
+  assert.ok(failed.every((r) => r.error));
+  assert.equal(balances(d.db, "42").find((b) => b.asset === d.stock)!.claimable, 800n);
+  d.long.transfer = real;
+  const ok = await claimAll(d.db, d.long, "42", TO, 0n);
+  assert.ok(ok.every((r) => r.txHash && !r.error));
+  assert.equal(balances(d.db, "42").find((b) => b.asset === d.stock)!.claimable, 0n);
+});

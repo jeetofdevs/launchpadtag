@@ -60,6 +60,10 @@ test("claim page offers Claim & Burn and the POST burns own-token rewards", asyn
   assert.match(page, />Claim &amp; burn supply</);
 
   const csrf = createHmac("sha256", d.cfg.sessionSecret).update("csrf:1001").digest("hex");
+  const toTreasury = new URLSearchParams({ to: d.long.treasury, csrf });
+  await app.request("http://x/claim", { method: "POST", headers: { cookie, "content-type": "application/x-www-form-urlencoded" }, body: toTreasury });
+  assert.equal(d.long.transfers.length, 0); // refused: paying the Treasury would lose the user's rewards
+
   const body = new URLSearchParams({ to: "0x00000000000000000000000000000000000000aa", csrf, mode: "burn" });
   const r = await app.request("http://x/claim", { method: "POST", headers: { cookie, "content-type": "application/x-www-form-urlencoded" }, body });
   assert.equal(r.status, 302);
