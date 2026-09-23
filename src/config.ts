@@ -41,7 +41,17 @@ function int(name: string, fallback: number): number {
   return v === undefined ? fallback : Number.parseInt(v, 10);
 }
 
+/** Values copied from .env.example that must never be used as a real secret. */
+const PLACEHOLDER_SECRETS = new Set(["change-me-to-a-long-random-string", "REPLACE_WITH_A_LONG_RANDOM_STRING", "dev-only-change-me"]);
+
 export function loadConfig() {
+  // Hosts like Railway keep variables that were pasted with an empty value. Treat those as unset
+  // so every setting falls back to its default instead of becoming "" / NaN.
+  for (const [k, v] of Object.entries(process.env)) if (v !== undefined && v.trim() === "") delete process.env[k];
+  if (process.env.SESSION_SECRET && PLACEHOLDER_SECRETS.has(process.env.SESSION_SECRET.trim())) {
+    console.warn("SESSION_SECRET is still the example value from .env.example — ignoring it and generating a private one.");
+    delete process.env.SESSION_SECRET;
+  }
   const chainMode = env("CHAIN_MODE", "mock") as "mock" | "onchain";
   const stockTokens = Object.fromEntries(
     STOCKS.map((s) => [s, (process.env[`STOCK_TOKEN_${s}`] || DEFAULT_STOCK_TOKENS[s]) as Address]),

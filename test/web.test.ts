@@ -95,3 +95,20 @@ test("launches list, token page, and sign-in link", async () => {
   const login = await app.request("http://x/login");
   assert.equal(login.status, 302);
 });
+
+test("empty variables fall back to defaults; example SESSION_SECRET is ignored", async () => {
+  const { loadConfig } = await import("../src/config.ts");
+  const saved = { ...process.env };
+  try {
+    Object.assign(process.env, { CHAIN_ID: "", RPC_URL: "", PROTOCOL_SHARE_BPS: " ", SESSION_SECRET: "change-me-to-a-long-random-string", X_OAUTH_CLIENT_ID: "" });
+    const cfg = loadConfig();
+    assert.equal(cfg.chain.chainId, 4663);
+    assert.equal(cfg.chain.rpcUrl, "https://rpc.mainnet.chain.robinhood.com");
+    assert.equal(cfg.chain.protocolShareBps, 500n);
+    assert.equal(cfg.sessionSecret, "");
+    assert.equal(cfg.x.oauthClientId, "");
+  } finally {
+    for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
+    Object.assign(process.env, saved);
+  }
+});
