@@ -47,13 +47,13 @@ test("rate limit: one launch per user per day", async () => {
   assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $AAA2", author: author() })).kind, "rejected");
 });
 
-test("duplicate ticker within cooldown links to the existing token", async () => {
+test("duplicate ticker is refused as reserved", async () => {
   const d = setup();
   const first = await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $DUPE", author: author({ id: "1" }) });
   assert.equal(first.kind, "live");
   const second = await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $DUPE", author: author({ id: "2" }) });
   assert.equal(second.kind, "rejected");
-  assert.ok(d.replier.sent.at(-1)!.text.includes(first.kind === "live" ? first.tokenAddress : "x"));
+  assert.equal(d.replier.sent.at(-1)!.text, "❌ $DUPE reserved. Try again using another ticker.");
 });
 
 test("chain failure marks launch failed and frees the user's daily slot", async () => {

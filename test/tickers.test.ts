@@ -18,8 +18,7 @@ test("ticker already launched on Long.xyz is reserved (case-insensitive) and the
   external(d, "si", 2 * 3600_000);
   const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $SI", author: author() });
   assert.equal(r.kind, "rejected");
-  assert.match(d.replier.sent[0].text, /^❌ \$SI reserved\. Try another ticker\./);
-  assert.match(d.replier.sent[0].text, /app\.long\.xyz\/tokens\/0xabab/);
+  assert.equal(d.replier.sent[0].text, "❌ $SI reserved. Try again using another ticker.");
 });
 
 test("by default a ticker stays reserved forever", async () => {
