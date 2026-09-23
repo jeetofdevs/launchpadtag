@@ -58,7 +58,9 @@ export async function handleMention(deps: BotDeps, m: Mention, now = Date.now())
      VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
 
-  const verdict = validateLaunch(db, cfg.rules, cmd, m.author, now);
+  const verdict = cmd.unknownStock
+    ? { ok: false as const, reason: `$${cmd.unknownStock} is not a stock you can pair with — see ${cfg.publicUrl}/stocks`, reserved: false }
+    : validateLaunch(db, cfg.rules, cmd, m.author, now);
   if (!verdict.ok) {
     insert.run(m.tweetId, m.author.id, m.author.username, cmd.ticker, cmd.name, cmd.stock,
       m.imageUrl ?? null, m.originTweetId ?? null, "rejected", verdict.reason, now);

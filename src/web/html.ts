@@ -125,7 +125,7 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
 .hero2 h1{font-size:clamp(40px,7vw,68px)}
 .hero2 .row{margin:22px 0 10px}
 .chipline{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-.chip{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--muted)}
+.chip{text-decoration:none;display:inline-block;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--muted)}
 @media (max-width:860px){.hero2{grid-template-columns:1fr;gap:24px}}
 .tweet{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;font-size:15px}
 .tweet + .tweet{margin-top:10px;margin-left:28px;position:relative}
@@ -211,18 +211,18 @@ ${o.publicUrl ? `<meta property="og:url" content="${esc(o.publicUrl)}">` : ""}
 <style>${CSS}</style></head><body>
 <header><div class="wrap">
   <a class="logo" href="/">LONG<span>SHOT</span></a>
-  <nav class="nav-main"><a href="/launches">Launches</a><a href="/#tokenomics">Tokenomics</a><a href="/fees">Transparency</a><a href="/#faq">FAQ</a></nav>
+  <nav class="nav-main"><a href="/launches">Launches</a><a href="/stocks">Stocks</a><a href="/#tokenomics">Tokenomics</a><a href="/fees">Transparency</a><a href="/#faq">FAQ</a></nav>
   <div class="nav-right">
     <a class="icon-link" href="${x}" target="_blank" rel="noopener" aria-label="LONGSHOT on X">𝕏</a>
     ${auth}
-    <details class="menu"><summary aria-label="Menu">☰</summary><div class="menu-panel"><a href="/launches">Launches</a><a href="/#tokenomics">Tokenomics</a><a href="/fees">Transparency</a><a href="/#faq">FAQ</a><a href="/claim">Claim rewards</a></div></details>
+    <details class="menu"><summary aria-label="Menu">☰</summary><div class="menu-panel"><a href="/launches">Launches</a><a href="/stocks">Stocks</a><a href="/#tokenomics">Tokenomics</a><a href="/fees">Transparency</a><a href="/#faq">FAQ</a><a href="/claim">Claim rewards</a></div></details>
   </div>
 </div></header>
 <main><div class="wrap">${body.html}</div></main>
 <footer><div class="wrap">
   <div class="foot-grid">
     <div><a class="logo" href="/">LONG<span>SHOT</span></a><p>One tweet. One token.<br>Stock-paired launches on Long.xyz.</p></div>
-    <div><b>Product</b><a href="/launches">Launches</a><a href="/claim">Claim rewards</a><a href="/#how">How it works</a></div>
+    <div><b>Product</b><a href="/launches">Launches</a><a href="/stocks">Stocks</a><a href="/claim">Claim rewards</a><a href="/#how">How it works</a></div>
     <div><b>Resources</b><a href="/#tokenomics">Tokenomics</a><a href="/fees">Transparency</a><a href="/#faq">FAQ</a></div>
     <div><b>Community</b><a href="${x}" target="_blank" rel="noopener">𝕏 @${esc(o.botHandle)}</a><a href="https://app.long.xyz" target="_blank" rel="noopener">Long.xyz</a></div>
   </div>

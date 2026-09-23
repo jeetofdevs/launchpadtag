@@ -38,7 +38,7 @@ Why it works:
 | `launch` | ✅ | Command keyword (aliases: `deploy`, `long`) |
 | `$TICKER` | ✅ | 2–10 letters/digits |
 | `"Token Name"` | ❌ | Defaults to the ticker |
-| `paired $STOCK` | ❌ | One of `NVDA`, `AAPL`, `MSFT`, `GOOGL`, `TSLA`, `MU`, `SPCX`. Default: `NVDA` |
+| `paired $STOCK` | ❌ | Any market offered on app.long.xyz — see `/stocks` on the website. Set the list with `PAIR_MARKETS`. Default: `NVDA` |
 | Image in the tweet | ❌ | Becomes the token logo |
 
 Examples:
@@ -165,7 +165,8 @@ The default `CHAIN_MODE=mock` uses a fake launchpad, so everything works without
 |---|---|
 | `src/parser.ts` | Parses `@longdotxyz launch $TICKER "Name" paired $STOCK` |
 | `src/validate.ts` | Account checks, rate limit, reserved tickers |
-| `src/stockSymbols.ts` | All Robinhood Stock Token symbols |
+| `src/stockSymbols.ts` | All Robinhood Stock Token symbols (reserved as tickers) |
+| `src/stocks.ts` | Names and addresses of Robinhood Stock Tokens; pairable markets (`PAIR_MARKETS`) |
 | `src/chain/tickers.ts` | Indexes Long.xyz launches to know which tickers are taken |
 | `src/bot.ts` | Handles one tweet: validate → metadata → launch → reply |
 | `src/x/client.ts` | X API: search for tags, reply from the bot account |

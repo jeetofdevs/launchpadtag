@@ -64,3 +64,10 @@ test("chain failure marks launch failed and frees the user's daily slot", async 
   delete (d.long as { createToken?: unknown }).createToken; // restore prototype method
   assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $RETRY", author: author() })).kind, "live");
 });
+
+test("pairing with a stock that isn't a Long.xyz market is refused with a pointer to /stocks", async () => {
+  const d = setup();
+  const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $NOPE paired $ZZZZ", author: author() });
+  assert.equal(r.kind, "rejected");
+  assert.match(d.replier.sent[0].text, /\$ZZZZ is not a stock you can pair with — see .*\/stocks/);
+});

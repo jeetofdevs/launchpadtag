@@ -7,6 +7,7 @@ import { tokenUrl } from "../bot.ts";
 import type { LongClient } from "../chain/index.ts";
 import { claimAll } from "../claim.ts";
 import { BURN_ADDRESS, STOCKS, type Config } from "../config.ts";
+import { POPULAR_STOCKS, STOCK_TOKENS } from "../stocks.ts";
 import type { DB } from "../db.ts";
 import { balances, feeReport, recentPayouts, rewardTotals, type RewardTotals } from "../ledger.ts";
 import { buildMetadata } from "../metadata.ts";
@@ -115,7 +116,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
           <h1>One tweet.<br>One token.</h1>
           <p class="lead">Tag <b>@${h}</b> with a ticker and LONGSHOT launches your token on Long.xyz — paired with a real tokenized stock. <b>You earn ${pct(fee.share.deployer)} of every trading fee, forever.</b></p>
           <div class="row"><a class="btn" href="${shotUrl}" target="_blank" rel="noopener">Take your shot on X →</a><a class="btn ghost" href="#how">How it works</a></div>
-          <div class="chipline"><span class="chip">No wallet needed to launch</span><span class="chip">Free to launch</span><span class="chip">${stocksCount} stock pairs</span><span class="chip">Claim &amp; Burn</span></div>
+          <div class="chipline"><span class="chip">No wallet needed to launch</span><span class="chip">Free to launch</span><a class="chip" href="/stocks">${stocksCount} stocks &amp; ETFs to pair</a><span class="chip">Claim &amp; Burn</span></div>
         </div>
         <div aria-label="Example: a launch tweet and LONGSHOT's automatic reply">
           <div class="tweet">
@@ -136,14 +137,14 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
         <div class="stat"><b>${stats.n}</b><small>tokens launched</small></div>
         <div class="stat"><b>${stats.u}</b><small>deployers</small></div>
         <div class="stat"><b>${pct(fee.share.deployer)}</b><small>of every fee to the creator</small></div>
-        <div class="stat"><b>${stocksCount}</b><small>real stocks to pair with</small></div>
+        <div class="stat"><b>${stocksCount}</b><small>real stocks &amp; ETFs to pair with</small></div>
       </div>
 
       <section class="section" id="how">
         <h2>How it works</h2>
         <p class="sub">From tweet to live token in about a minute. No website, no wallet, no gas.</p>
         <div class="steps4">
-          <div class="step"><b>Tweet it</b><p>Post <code>@${h} launch $TICKER</code>. Add <code>"Name"</code>, <code>paired $TSLA</code> and a photo for the logo if you like.</p></div>
+          <div class="step"><b>Tweet it</b><p>Post <code>@${h} launch $TICKER</code>. Add <code>"Name"</code>, <code>paired $TSLA</code> (any of <a href="/stocks">${stocksCount} stocks</a>) and a photo for the logo if you like.</p></div>
           <div class="step"><b>We launch it</b><p>LONGSHOT checks the ticker is free, deploys your token on Long.xyz and pays the gas.</p></div>
           <div class="step"><b>Auto reply</b><p><b>@${cfg.x.botHandle}</b> replies under your tweet with the contract address and trade link.</p></div>
           <div class="step"><b>Get paid</b><p>Every buy and sell pays you ${pct(fee.share.deployer)} of the fee. Sign in with X to claim — or claim &amp; burn.</p></div>
@@ -154,7 +155,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
         <h2>Why LONGSHOT</h2>
         <p class="sub">Built for creators who move fast — and for holders who want a fair start.</p>
         <div class="features">
-          <div class="feat"><i>📈</i><b>Stock-paired</b><p>Every token trades against a real Robinhood Stock Token — NVDA, TSLA, AAPL and more.</p></div>
+          <div class="feat"><i>📈</i><b>Stock-paired</b><p>Pair with any of ${stocksCount} Robinhood Stock Tokens on Long.xyz — ${POPULAR_STOCKS.slice(0, 6).map((s) => `$${s}`).join(", ")} and <a href="/stocks">many more</a>.</p></div>
           <div class="feat"><i>⚖️</i><b>100% fair launch</b><p>1B fixed supply, all on the curve. No team allocation, no presale, no insiders.</p></div>
           <div class="feat"><i>💰</i><b>${pct(fee.share.deployer)} creator rewards</b><p>The person who tweets earns most of every trading fee — forever, claimable any time.</p></div>
           <div class="feat"><i>🔥</i><b>Claim &amp; Burn</b><p>Burn the rewards paid in your own token to shrink supply — recorded on-chain and on our Transparency page.</p></div>
@@ -237,6 +238,27 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
         <div class="row"><a class="btn" href="${shotUrl}" target="_blank" rel="noopener">Launch on X →</a><a class="btn ghost" href="/claim">Claim rewards</a></div>
       </section>
     `));
+  });
+
+  // ── Supported stocks ──────────────────────────────────────────────────────
+  app.get("/stocks", async (c) => {
+    const q = (c.req.query("q") ?? "").replace(/^\$/, "").trim().toUpperCase().slice(0, 40);
+    const all = STOCKS.map((s) => ({ symbol: s, name: STOCK_TOKENS[s].name, address: long.stockToken(s) }));
+    const rows = q ? all.filter((r) => r.symbol.startsWith(q) || r.name.toUpperCase().includes(q)) : all;
+    const example = (s: string) => `https://x.com/intent/post?text=${encodeURIComponent(`@${cfg.x.triggerHandle} launch $TICKER "Token Name" paired $${s}`)}`;
+    return c.html(await render(c, "Stocks you can pair with · LONGSHOT", html`
+      <span class="tag">${STOCKS.length} stocks &amp; ETFs</span>
+      <h1>Pick your pair</h1>
+      <p class="lead">Every Robinhood Stock Token used on Long.xyz. Add <code>paired $SYMBOL</code> to your tweet — no pair means $${cfg.chain.defaultStock}.</p>
+      <div class="chipline">${POPULAR_STOCKS.map((s) => html`<a class="chip" href="${example(s)}" target="_blank" rel="noopener">$${s}</a>`)}</div>
+      <form class="search" method="get" action="/stocks"><input type="search" name="q" value="${q}" placeholder="Search symbol or company" aria-label="Search stocks"><button class="btn" type="submit">Search</button></form>
+      ${rows.length === 0 ? html`<p class="muted">No matches.</p>` : html`
+      <div class="scroll"><table><tr><th>Symbol</th><th>Name</th><th>Token</th><th></th></tr>
+      ${rows.map((r) => html`<tr><td><b>$${r.symbol}</b></td><td>${r.name}</td>
+        <td><a class="mono" href="${long.addressUrl(r.address)}" target="_blank" rel="noopener">${shortAddr(r.address)}</a></td>
+        <td><a class="btn sm ghost nowrap" href="${example(r.symbol)}" target="_blank" rel="noopener">Launch →</a></td></tr>`)}
+      </table></div>`}
+    `, `Launch a token paired with any of ${STOCKS.length} Robinhood Stock Tokens on Long.xyz.`));
   });
 
   // ── Sign in ───────────────────────────────────────────────────────────────

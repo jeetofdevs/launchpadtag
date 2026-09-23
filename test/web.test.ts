@@ -112,3 +112,12 @@ test("empty variables fall back to defaults; example SESSION_SECRET is ignored",
     Object.assign(process.env, saved);
   }
 });
+
+test("/stocks lists the pairable markets", async () => {
+  const { STOCKS } = await import("../src/stocks.ts");
+  const d = setup();
+  d.cfg.sessionSecret = "s".repeat(32);
+  const body = await (await createApp(d.cfg, d.db, d.long).request("http://x/stocks")).text();
+  for (const s of STOCKS) assert.ok(body.includes(`<b>$${s}</b>`), s);
+  assert.match(await (await createApp(d.cfg, d.db, d.long).request("http://x/stocks?q=tesla")).text(), /\$TSLA/);
+});

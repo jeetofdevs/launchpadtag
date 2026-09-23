@@ -1,9 +1,11 @@
-import { STOCKS, type Stock } from "./config.ts";
+import { isStock, type Stock } from "./config.ts";
 
 export interface LaunchCommand {
   ticker: string;
   name: string;
   stock: Stock;
+  /** Set when the tweet asked for a pair that isn't a supported stock. */
+  unknownStock?: string;
 }
 
 function escape(s: string) {
@@ -20,13 +22,14 @@ export function parseLaunch(text: string, handle: string, defaultStock: Stock): 
   const re = new RegExp(
     `@${escape(handle)}\\s+(?:launch|deploy|long)\\s+\\$([A-Za-z0-9]{2,10})\\b` +
       `(?:\\s+"([^"\\n]{1,32})")?` +
-      `(?:\\s+paired\\s+\\$(${STOCKS.join("|")})\\b)?`,
+      `(?:\\s+paired\\s+\\$([A-Za-z0-9]{1,6})\\b)?`,
     "i",
   );
   const m = normalized.match(re);
   if (!m) return null;
   const ticker = m[1].toUpperCase();
   const name = (m[2] ?? "").trim() || ticker;
-  const stock = (m[3]?.toUpperCase() as Stock | undefined) ?? defaultStock;
-  return { ticker, name, stock };
+  const asked = m[3]?.toUpperCase();
+  if (asked && !isStock(asked)) return { ticker, name, stock: defaultStock, unknownStock: asked };
+  return { ticker, name, stock: (asked as Stock | undefined) ?? defaultStock };
 }

@@ -1,21 +1,7 @@
 import type { Address, Hex } from "viem";
 
-export const STOCKS = ["NVDA", "AAPL", "MSFT", "GOOGL", "TSLA", "MU", "SPCX"] as const;
-export type Stock = (typeof STOCKS)[number];
-
-/**
- * Robinhood Stock Tokens on Robinhood Chain (4663), from the 0xsequence token directory
- * (index/robinhood/erc20.json). Override with STOCK_TOKEN_<SYMBOL>.
- */
-export const DEFAULT_STOCK_TOKENS: Record<Stock, Address> = {
-  NVDA: "0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC",
-  AAPL: "0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9",
-  MSFT: "0xe93237C50D904957Cf27E7B1133b510C669c2e74",
-  GOOGL: "0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3",
-  TSLA: "0x322F0929c4625eD5bAd873c95208D54E1c003b2d",
-  MU: "0xfF080c8ce2E5feadaCa0Da81314Ae59D232d4afD",
-  SPCX: "0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa",
-};
+import { STOCK_TOKENS, type Stock } from "./stocks.ts";
+export { STOCKS, isStock, type Stock } from "./stocks.ts";
 
 /** Tokens sent here are gone forever ("Claim & Burn"). */
 export const BURN_ADDRESS = "0x000000000000000000000000000000000000dEaD" as const;
@@ -54,7 +40,7 @@ export function loadConfig() {
   }
   const chainMode = env("CHAIN_MODE", "mock") as "mock" | "onchain";
   const stockTokens = Object.fromEntries(
-    STOCKS.map((s) => [s, (process.env[`STOCK_TOKEN_${s}`] || DEFAULT_STOCK_TOKENS[s]) as Address]),
+    Object.entries(STOCK_TOKENS).map(([s, t]) => [s, (process.env[`STOCK_TOKEN_${s}`] || t.address) as Address]),
   ) as Record<Stock, Address>;
 
   return {
