@@ -12,16 +12,34 @@ import { ConsoleReplier, XMentionSource, XReplier, describeXError } from "./x/cl
 
 const log = (m: string) => console.log(`[${new Date().toISOString()}] ${m}`);
 
-function fatal(e: unknown): never {
-  console.error(`[${new Date().toISOString()}] FATAL: ${e instanceof Error ? e.message : String(e)}`);
-  console.error("LONGSHOT could not start. Check the Variables on your host (see DEPLOY-RAILWAY.md).");
-  process.exit(1);
+/**
+ * Startup failed (usually a Variable on the host). Instead of exiting — which Railway shows as a crashed,
+ * unreachable site — keep a minimal server up: pages show a maintenance notice and /healthz shows the reason.
+ * The bot, fee collector and claims stay off, so nothing can go wrong on-chain.
+ */
+function fatal(e: unknown): void {
+  // Never echo anything that looks like a private key or long secret.
+  const reason = (e instanceof Error ? e.message : String(e)).replace(/(0x)?[0-9a-fA-F]{40,}/g, "[redacted]");
+  console.error(`[${new Date().toISOString()}] FATAL: ${reason}`);
+  console.error("LONGSHOT is running in safe mode (website shows maintenance, bot and claims are off). Fix the Variables and redeploy.");
+  const port = Number.parseInt(process.env.PORT ?? "8787", 10);
+  serve({
+    port,
+    fetch: (req) => new URL(req.url).pathname === "/healthz"
+      ? Response.json({ ok: false, safeMode: true, error: reason }, { status: 503 })
+      : new Response(
+          '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LONGSHOT</title>' +
+          '<body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#04130b;color:#e4f7ec;font:16px system-ui,sans-serif;text-align:center">' +
+          '<div><h1 style="color:#35f28a;letter-spacing:.08em">LONGSHOT</h1><p>We\'re doing some maintenance. Back shortly.</p></div></body>',
+          { status: 503, headers: { "content-type": "text/html; charset=utf-8", "retry-after": "120" } },
+        ),
+  });
 }
 process.on("unhandledRejection", (e) => log(`unhandled rejection: ${e instanceof Error ? e.stack : e}`));
 
-let cfg: ReturnType<typeof loadConfig>;
-let db: ReturnType<typeof openDb>;
-let long: ReturnType<typeof createLongClient>;
+let cfg!: ReturnType<typeof loadConfig>;
+let db!: ReturnType<typeof openDb>;
+let long!: ReturnType<typeof createLongClient>;
 try {
   cfg = loadConfig();
   if (dbIsEphemeral(cfg.dbPath)) {
@@ -46,6 +64,8 @@ try {
   if (removed) log(`switched to onchain: removed ${removed} test launch(es) and their fake fees/payouts from mock mode.`);
 } catch (e) {
   fatal(e);
+  // Stay on the maintenance server: pause this module forever so nothing below runs.
+  await new Promise<never>(() => {});
 }
 
 log(`LONGSHOT starting — chain=${cfg.chain.mode}, treasury=${long.treasury}, x=${cfg.x.enabled ? "on" : "off"}, x-login=${cfg.x.oauthClientId ? (cfg.x.oauthClientSecret ? "on" : "missing X_OAUTH_CLIENT_SECRET") : "off (X_OAUTH_CLIENT_ID not set)"}, url=${cfg.publicUrl}, db=${cfg.dbPath}`);
