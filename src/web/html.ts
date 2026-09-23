@@ -126,6 +126,7 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
 .hero2{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding:24px 0 12px}
 .hero2 h1{font-size:clamp(40px,7vw,68px)}
 .hero2 .row{margin:22px 0 10px}
+.feesto{display:inline-block;margin-top:8px;border:1px solid var(--accent-2);background:rgba(53,242,138,.08);color:var(--text);border-radius:999px;padding:4px 12px;font-size:14px}
 .chipline{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .slogo{width:22px;height:22px;border-radius:50%;vertical-align:middle;margin-right:8px;background:#0f2a1c;object-fit:cover}
 .chip .slogo{width:16px;height:16px;margin-right:5px}

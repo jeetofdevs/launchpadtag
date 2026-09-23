@@ -106,6 +106,9 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
 
   app.get("/healthz", (c) => c.json({ ok: true, chain: cfg.chain.mode, x: cfg.x.enabled, xLogin: Boolean(cfg.x.oauthClientId && cfg.x.oauthClientSecret), publicUrl: cfg.publicUrl, tickerIndexFresh: tickersFresh() }));
 
+  /** "🎁 fees → @receiver" under the creator, shown when the creator sent the fees to another account. */
+  const feesTo = (u: string | null) => (u ? html`<div class="small muted nowrap">🎁 fees → <a href="https://x.com/${u}" target="_blank" rel="noopener">@${u}</a></div>` : raw(""));
+
   /** Small round market logo; falls back to the letter badge if the image can't load. */
   const logo = (sym: string, cls = "slogo") => html`<img class="${cls}" src="/logo/${sym}" alt="" loading="lazy" width="22" height="22" onerror="this.onerror=null;this.src='/logo/${sym}?letter=1'">`;
 
@@ -131,8 +134,8 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       .prepare("SELECT COUNT(*) AS n, COUNT(DISTINCT x_user_id) AS u FROM launches WHERE status = 'live'")
       .get() as { n: number; u: number };
     const recent = db
-      .prepare("SELECT tweet_id, ticker, name, stock, x_username, token_address FROM launches WHERE status = 'live' ORDER BY created_at DESC LIMIT 10")
-      .all() as { tweet_id: string; ticker: string; name: string; stock: string; x_username: string; token_address: string }[];
+      .prepare("SELECT tweet_id, ticker, name, stock, x_username, fee_username, token_address FROM launches WHERE status = 'live' ORDER BY created_at DESC LIMIT 10")
+      .all() as { tweet_id: string; ticker: string; name: string; stock: string; x_username: string; fee_username: string | null; token_address: string }[];
     const h = cfg.x.triggerHandle;
     const fee = feeSplit(cfg.chain);
     const shotUrl = `https://x.com/intent/post?text=${encodeURIComponent(`@${h} launch $TICKER "Token Name" paired $NVDA`)}`;
@@ -232,7 +235,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
         ${recent.length === 0 ? html`<p class="muted">No tokens yet. Be the first — <a href="${shotUrl}" target="_blank" rel="noopener">take your shot</a>.</p>` : html`
         <div class="scroll"><table><tr><th>Token</th><th>Paired</th><th>Deployer</th><th>CA</th></tr>
         ${recent.map((r) => html`<tr><td><a href="/t/${r.tweet_id}"><b>$${r.ticker}</b></a> <span class="muted">${r.name}</span></td><td class="nowrap">${logo(r.stock)}$${marketLabel(r.stock)}</td>
-          <td><a href="https://x.com/${r.x_username}/status/${r.tweet_id}" target="_blank" rel="noopener">@${r.x_username}</a></td>
+          <td><a href="https://x.com/${r.x_username}/status/${r.tweet_id}" target="_blank" rel="noopener">@${r.x_username}</a>${feesTo(r.fee_username)}</td>
           <td><a class="mono" href="${tokenUrl(cfg, r.token_address)}" target="_blank" rel="noopener">${shortAddr(r.token_address)}</a></td></tr>`)}
         </table></div>`}
       </section>
@@ -310,9 +313,9 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
   app.get("/launches", async (c) => {
     const q = (c.req.query("q") ?? "").replace(/^\$/, "").trim().toUpperCase().slice(0, 10);
     const rows = (q
-      ? db.prepare("SELECT tweet_id, ticker, name, stock, x_username, token_address, created_at FROM launches WHERE status = 'live' AND (ticker LIKE ? OR UPPER(x_username) LIKE ?) ORDER BY created_at DESC LIMIT 200").all(`${q}%`, `${q}%`)
-      : db.prepare("SELECT tweet_id, ticker, name, stock, x_username, token_address, created_at FROM launches WHERE status = 'live' ORDER BY created_at DESC LIMIT 200").all()
-    ) as { tweet_id: string; ticker: string; name: string; stock: string; x_username: string; token_address: string; created_at: number }[];
+      ? db.prepare("SELECT tweet_id, ticker, name, stock, x_username, fee_username, token_address, created_at FROM launches WHERE status = 'live' AND (ticker LIKE ? OR UPPER(x_username) LIKE ?) ORDER BY created_at DESC LIMIT 200").all(`${q}%`, `${q}%`)
+      : db.prepare("SELECT tweet_id, ticker, name, stock, x_username, fee_username, token_address, created_at FROM launches WHERE status = 'live' ORDER BY created_at DESC LIMIT 200").all()
+    ) as { tweet_id: string; ticker: string; name: string; stock: string; x_username: string; fee_username: string | null; token_address: string; created_at: number }[];
     return c.html(await render(c, "Launches · LONGSHOT", html`
       <span class="tag">Launches</span>
       <h1>Every LONGSHOT token</h1>
@@ -320,7 +323,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       ${rows.length === 0 ? html`<p class="muted">${q ? "No matches." : "No tokens yet."}</p>` : html`
       <div class="scroll"><table><tr><th>Token</th><th>Paired</th><th>Creator</th><th>Launched</th><th>CA</th></tr>
       ${rows.map((r) => html`<tr><td><a href="/t/${r.tweet_id}"><b>$${r.ticker}</b></a> <span class="muted">${r.name}</span></td><td class="nowrap">${logo(r.stock)}$${marketLabel(r.stock)}</td>
-        <td><a href="https://x.com/${r.x_username}" target="_blank" rel="noopener">@${r.x_username}</a></td>
+        <td><a href="https://x.com/${r.x_username}" target="_blank" rel="noopener">@${r.x_username}</a>${feesTo(r.fee_username)}</td>
         <td class="nowrap">${new Date(r.created_at).toISOString().slice(0, 10)}</td>
         <td><a class="mono" href="${tokenUrl(cfg, r.token_address)}" target="_blank" rel="noopener">${shortAddr(r.token_address)}</a></td></tr>`)}
       </table></div>`}
@@ -347,7 +350,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     return c.html(await render(c, `$${l.ticker} · ${l.name} · LONGSHOT`, html`
       <div class="tokhead">
         ${l.image_url?.startsWith("https://") ? html`<img class="av" src="${l.image_url}" alt="" style="object-fit:cover">` : html`<span class="av">${l.ticker.slice(0, 2)}</span>`}
-        <div><span class="tag">Paired with ${logo(l.stock)}$${marketLabel(l.stock)}</span><h1 style="margin:4px 0 0">$${l.ticker}</h1><div class="muted">${l.name}</div></div>
+        <div><span class="tag">Paired with ${logo(l.stock)}$${marketLabel(l.stock)}</span><h1 style="margin:4px 0 0">$${l.ticker}</h1><div class="muted">${l.name}</div>${l.fee_username ? html`<div class="feesto">🎁 Creator fees go to <a href="https://x.com/${l.fee_username}" target="_blank" rel="noopener">@${l.fee_username}</a></div>` : raw("")}</div>
       </div>
       <div class="row" style="margin-top:18px"><a class="btn" href="${tokenUrl(cfg, l.token_address)}" target="_blank" rel="noopener">Trade on Long.xyz →</a><a class="btn ghost" href="https://x.com/${l.x_username}/status/${l.tweet_id}" target="_blank" rel="noopener">Launch tweet</a></div>
       <div class="kv">

@@ -46,6 +46,11 @@ test("send fees: the recipient is credited and can claim; the reply says so", as
 
   const page = await (await createApp(d.cfg, d.db, d.long).request(`http://x/t/${tweetId}`)).text();
   assert.match(page, /Fees go to<\/small><a href="https:\/\/x.com\/Bob_1"/);
+  assert.match(page, /Creator fees go to <a href="https:\/\/x.com\/Bob_1"/);
+  const app = createApp(d.cfg, d.db, d.long);
+  for (const path of ["/", "/launches"]) {
+    assert.match(await (await app.request(`http://x${path}`)).text(), /🎁 fees → <a href="https:\/\/x.com\/Bob_1"/, path);
+  }
 });
 
 test("send fees: unknown account or the bot itself is rejected; yourself is a normal launch", async () => {
