@@ -62,7 +62,10 @@ export async function handleMention(deps: BotDeps, m: Mention, now = Date.now())
     insert.run(m.tweetId, m.author.id, m.author.username, cmd.ticker, cmd.name, cmd.stock,
       m.imageUrl ?? null, m.originTweetId ?? null, "rejected", verdict.reason, now);
     const extra = verdict.existingToken ? `\n🔗 ${tokenUrl(cfg, verdict.existingToken)}` : "";
-    await replier.reply(m.tweetId, `❌ Gagal launch $${cmd.ticker}: ${verdict.reason}.${extra}`).catch((e) => log(`reply failed: ${e}`));
+    const text = verdict.reserved
+      ? `❌ $${cmd.ticker} reserved. Try another ticker.\nTicker ini sudah dipakai — coba ticker lain.${extra}`
+      : `❌ Gagal launch $${cmd.ticker}: ${verdict.reason}.${extra}`;
+    await replier.reply(m.tweetId, text).catch((e) => log(`reply failed: ${e}`));
     log(`rejected ${m.tweetId} $${cmd.ticker}: ${verdict.reason}`);
     return { kind: "rejected", reason: verdict.reason };
   }

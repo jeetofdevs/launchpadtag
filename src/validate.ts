@@ -1,6 +1,7 @@
 import { STOCKS, type Config } from "./config.ts";
 import type { DB } from "./db.ts";
 import type { LaunchCommand } from "./parser.ts";
+import { ROBINHOOD_STOCK_SYMBOLS } from "./stockSymbols.ts";
 
 export interface Author {
   id: string;
@@ -12,6 +13,7 @@ export interface Author {
 
 const BLOCKED_TICKERS = new Set<string>([
   ...STOCKS,
+  ...ROBINHOOD_STOCK_SYMBOLS,
   "BTC", "ETH", "USDC", "USDT", "SOL", "BNB", "HOOD", "LONG",
   "APPLE", "GOOGLE", "TESLA", "NVIDIA", "MICROSOFT", "ROBINHOOD", "SPACEX",
   "SCAM", "RUG", "RUGPULL", "AIRDROP", "FREE",
@@ -19,7 +21,7 @@ const BLOCKED_TICKERS = new Set<string>([
 
 export type Verdict =
   | { ok: true }
-  | { ok: false; reason: string; existingToken?: string };
+  | { ok: false; reason: string; existingToken?: string; reserved?: boolean };
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -39,7 +41,22 @@ export function validateLaunch(
   if (author.followers < rules.minFollowers)
     return { ok: false, reason: `minimal ${rules.minFollowers} followers` };
 
-  if (BLOCKED_TICKERS.has(cmd.ticker)) return { ok: false, reason: `ticker $${cmd.ticker} tidak diizinkan` };
+  if (BLOCKED_TICKERS.has(cmd.ticker)) return { ok: false, reason: "ticker milik saham/aset asli", reserved: true };
+
+  // Same rule as Long.xyz: a ticker that has been launched is reserved (for TICKER_COOLDOWN_HOURS; 0 = forever).
+  const since = rules.tickerCooldownHours > 0 ? now - rules.tickerCooldownHours * 60 * 60 * 1000 : 0;
+
+  const dup = db
+    .prepare(
+      "SELECT token_address FROM launches WHERE ticker = ? AND created_at > ? AND status IN ('queued','deploying','live') ORDER BY created_at DESC LIMIT 1",
+    )
+    .get(cmd.ticker, since) as { token_address: string | null } | undefined;
+  if (dup) return { ok: false, reason: "sudah di-launch lewat LONGSHOT", existingToken: dup.token_address ?? undefined, reserved: true };
+
+  const external = db
+    .prepare("SELECT asset FROM external_launches WHERE symbol = ? AND launched_at > ? ORDER BY launched_at DESC LIMIT 1")
+    .get(cmd.ticker, since) as { asset: string } | undefined;
+  if (external) return { ok: false, reason: "sudah di-launch di Long.xyz", existingToken: external.asset, reserved: true };
 
   const recentByUser = db
     .prepare(
@@ -48,24 +65,6 @@ export function validateLaunch(
     .get(author.id, now - DAY) as { n: number };
   if (recentByUser.n >= rules.launchesPerDay)
     return { ok: false, reason: `maksimal ${rules.launchesPerDay} launch per 24 jam` };
-
-  // 0 = a ticker can never be reused.
-  const since = rules.tickerCooldownHours > 0 ? now - rules.tickerCooldownHours * 60 * 60 * 1000 : 0;
-  const window = rules.tickerCooldownHours > 0 ? `dalam ${rules.tickerCooldownHours} jam terakhir` : "sebelumnya";
-
-  const dup = db
-    .prepare(
-      "SELECT token_address FROM launches WHERE ticker = ? AND created_at > ? AND status IN ('queued','deploying','live') ORDER BY created_at DESC LIMIT 1",
-    )
-    .get(cmd.ticker, since) as { token_address: string | null } | undefined;
-  if (dup)
-    return { ok: false, reason: `$${cmd.ticker} sudah di-launch ${window}`, existingToken: dup.token_address ?? undefined };
-
-  const external = db
-    .prepare("SELECT asset FROM external_launches WHERE symbol = ? AND launched_at > ? ORDER BY launched_at DESC LIMIT 1")
-    .get(cmd.ticker, since) as { asset: string } | undefined;
-  if (external)
-    return { ok: false, reason: `$${cmd.ticker} sudah dipakai di Long.xyz ${window}`, existingToken: external.asset };
 
   return { ok: true };
 }

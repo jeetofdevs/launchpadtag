@@ -50,6 +50,7 @@ export interface TickerChainReader {
 export class LongTickerIndexer {
   private readonly pub: TickerChainReader;
   private lastSyncAt = 0;
+  private inFlight: Promise<number> | null = null;
 
   constructor(
     private readonly cfg: Config["chain"],
@@ -66,26 +67,43 @@ export class LongTickerIndexer {
     return Date.now() - this.lastSyncAt < maxAgeMs;
   }
 
-  /** Where to start the very first sync: only as far back as the reservation window needs. */
-  private async initialBlock(head: bigint): Promise<bigint> {
-    if (this.rules.tickerCooldownHours <= 0) return this.cfg.longStartBlock;
+  /** Seconds per block, measured over the last `sample` blocks, plus the head's timestamp. */
+  private async clock(head: bigint) {
     const sample = 10_000n;
     const [a, b] = await Promise.all([
       this.pub.getBlock({ blockNumber: head }),
       this.pub.getBlock({ blockNumber: head > sample ? head - sample : 0n }),
     ]);
     const secsPerBlock = Math.max(Number(a.timestamp - b.timestamp) / Number(sample), 0.01);
+    /** Estimated wall-clock time of a block, in ms. Avoids one RPC call per launch. */
+    const timeOf = (block: bigint) => Number(a.timestamp) * 1000 - Number(head - block) * secsPerBlock * 1000;
+    return { secsPerBlock, timeOf };
+  }
+
+  /** Where to start the very first sync: only as far back as the reservation window needs. */
+  private initialBlock(head: bigint, secsPerBlock: number): bigint {
+    if (this.rules.tickerCooldownHours <= 0) return this.cfg.longStartBlock; // reserved forever: need full history
     const windowBlocks = BigInt(Math.ceil((this.rules.tickerCooldownHours * 3600 * 1.25) / secsPerBlock));
     const start = head > windowBlocks ? head - windowBlocks : 0n;
     return start > this.cfg.longStartBlock ? start : this.cfg.longStartBlock;
   }
 
-  async sync(): Promise<number> {
+  /** Bring the index up to the chain head. Concurrent callers share one run. */
+  sync(): Promise<number> {
+    this.inFlight ??= this.syncOnce().finally(() => (this.inFlight = null));
+    return this.inFlight;
+  }
+
+  private async syncOnce(): Promise<number> {
     const head = await this.pub.getBlockNumber();
+    const { secsPerBlock, timeOf } = await this.clock(head);
     const cursor = getKv(this.db, CURSOR_KEY);
-    let from = cursor ? BigInt(cursor) + 1n : await this.initialBlock(head);
+    let from = cursor ? BigInt(cursor) + 1n : this.initialBlock(head, secsPerBlock);
     let chunk = MAX_CHUNK;
     let added = 0;
+    const backfill = head - from > 100n * MAX_CHUNK;
+    if (backfill) this.log(`ticker index: backfilling Long.xyz launches from block ${from} to ${head}…`);
+    let lastProgress = Date.now();
 
     while (from <= head) {
       const to = from + chunk - 1n > head ? head : from + chunk - 1n;
@@ -114,21 +132,21 @@ export class LongTickerIndexer {
           contracts: launches.map((l) => ({ address: l.asset, abi: erc20Abi, functionName: "symbol" as const })),
           allowFailure: true,
         });
-        const blocks = new Map<bigint, number>();
-        for (const b of new Set(launches.map((l) => l.block))) {
-          blocks.set(b, Number((await this.pub.getBlock({ blockNumber: b })).timestamp) * 1000);
-        }
         tx(this.db, () => {
           launches.forEach((l, i) => {
             const s = symbols[i];
             if (s.status !== "success") return;
-            recordExternalLaunch(this.db, { asset: l.asset, symbol: s.result, numeraire: l.numeraire, block: l.block, launchedAt: blocks.get(l.block)! });
+            recordExternalLaunch(this.db, { asset: l.asset, symbol: s.result, numeraire: l.numeraire, block: l.block, launchedAt: Math.max(1, Math.round(timeOf(l.block))) });
             added++;
           });
         });
       }
       setKv(this.db, CURSOR_KEY, to.toString());
       from = to + 1n;
+      if (backfill && Date.now() - lastProgress > 30_000) {
+        lastProgress = Date.now();
+        this.log(`ticker index: block ${to}/${head}, ${added} launches so far`);
+      }
       if (chunk < MAX_CHUNK) chunk *= 2n;
     }
 

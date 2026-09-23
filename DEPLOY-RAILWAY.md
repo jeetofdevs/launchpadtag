@@ -134,6 +134,8 @@ X_OAUTH_CLIENT_SECRET=
 
 Hapus baris `ALLOW_DEV_LOGIN` kalau masih ada. Klik **Update Variables**.
 
+> **Pertama kali menyala di mode sungguhan**, bot membaca seluruh riwayat launch Long.xyz supaya tahu ticker mana saja yang sudah *reserved*. Proses ini bisa memakan beberapa menit. Di **View Logs** akan terlihat `ticker index: backfilling…` lalu progresnya. Selama proses ini, tweet launch ditunda dulu (tidak hilang) dan diproses setelah selesai.
+
 ### E. Tes kecil sebelum diumumkan
 
 1. Dari akun X **pribadi** kamu, tweet: `@longdotxyz launch $TESTLS "Test Longshot" paired $NVDA`
@@ -156,6 +158,8 @@ Kalau semua berhasil, LONGSHOT siap diumumkan. 🚀
 | Data hilang setelah restart | Volume belum dipasang di `/data` (Langkah 3). |
 | Bot tidak membalas tweet | `X_ENABLED` bukan `true`, paket X API tidak punya akses search, atau izin App bukan *Read and Write*. |
 | Log: `TREASURY_PRIVATE_KEY is missing/invalid` | Private key belum diisi atau salah copy (harus 64 karakter, boleh diawali `0x` atau tidak). |
+| Bot membalas `reserved` | Ticker sudah pernah di-launch (di LONGSHOT atau di app.long.xyz), atau sama dengan simbol saham Robinhood. User harus memilih ticker lain. |
+| Log: `ticker-sync error` terus-menerus | RPC Robinhood Chain sedang bermasalah. Launch ditunda sampai pengecekan ticker berhasil lagi. |
 | Log: `RECONCILE:` | Ada transaksi yang terkirim tapi belum terkonfirmasi. Saldo user dikunci supaya aman. Kirim log-nya ke Claude untuk dicek. |
 
 Kirim isi **View Logs** ke Claude kapan saja kalau bingung.

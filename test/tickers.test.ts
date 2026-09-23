@@ -13,27 +13,37 @@ function external(d: ReturnType<typeof setup>, symbol: string, agoMs: number) {
   recordExternalLaunch(d.db, { asset: `0x${"ab".repeat(20)}`, symbol, numeraire: TSLA, block: 1n, launchedAt: Date.now() - agoMs });
 }
 
-test("ticker launched on Long.xyz within 24h is rejected (case-insensitive)", async () => {
+test("ticker already launched on Long.xyz is reserved (case-insensitive) and the reply says so", async () => {
   const d = setup();
-  external(d, "moon", 2 * 3600_000);
-  const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $MOON", author: author() });
+  external(d, "si", 2 * 3600_000);
+  const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $SI", author: author() });
   assert.equal(r.kind, "rejected");
-  assert.match(d.replier.sent[0].text, /Long\.xyz/);
+  assert.match(d.replier.sent[0].text, /^❌ \$SI reserved\. Try another ticker\./);
+  assert.match(d.replier.sent[0].text, /app\.long\.xyz\/tokens\/0xabab/);
 });
 
-test("ticker becomes free again after the reservation window", async () => {
+test("by default a ticker stays reserved forever", async () => {
   const d = setup();
+  external(d, "MOON", 400 * DAY);
+  const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $MOON", author: author() });
+  assert.equal(r.kind, "rejected");
+});
+
+test("with TICKER_COOLDOWN_HOURS=24 a ticker becomes free again after the window", async () => {
+  const d = setup();
+  d.cfg.rules.tickerCooldownHours = 24;
   external(d, "MOON", 2 * DAY);
   const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $MOON", author: author() });
   assert.equal(r.kind, "live");
 });
 
-test("TICKER_COOLDOWN_HOURS=0 means a ticker is never reusable", async () => {
+test("every Robinhood stock symbol is reserved, not just the 7 pairing stocks", async () => {
   const d = setup();
-  d.cfg.rules.tickerCooldownHours = 0;
-  external(d, "OLD", 365 * DAY);
-  const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $OLD", author: author() });
-  assert.equal(r.kind, "rejected");
+  for (const t of ["AMZN", "META", "PLTR", "GME"]) {
+    const r = await handleMention(d, { tweetId: nextTweetId(), text: `@longdotxyz launch $${t}`, author: author({ id: t }) });
+    assert.equal(r.kind, "rejected", t);
+  }
+  assert.match(d.replier.sent[0].text, /reserved/);
 });
 
 /** Fake chain: LaunchCreated logs at given blocks, 1 block per second, head = 2_000_000. */
@@ -68,6 +78,7 @@ test("indexer picks up Long.xyz launches, then the bot refuses those tickers", a
     { block: 1_900_000n, asset: `0x${"a2".repeat(20)}`, symbol: "doge" },  // ~28 h ago
   ]);
   d.cfg.chain.longStartBlock = 0n; // fake chain is shorter than the real one
+  d.cfg.rules.tickerCooldownHours = 24;
   const idx = new LongTickerIndexer(d.cfg.chain, d.cfg.rules, d.db, () => {}, chain.client);
   assert.equal(idx.isFresh(), false);
   const added = await idx.sync();
@@ -94,6 +105,7 @@ test("indexer shrinks the block range when the RPC limits it", async () => {
 
 test("first sync only scans the reservation window, never before the launcher existed", async () => {
   const d = setup();
+  d.cfg.rules.tickerCooldownHours = 24;
   d.cfg.chain.longStartBlock = 1_950_000n;
   const chain = fakeChain([
     { block: 1_940_000n, asset: `0x${"a4".repeat(20)}`, symbol: "PRE" },  // before launcher start: ignored
@@ -101,4 +113,26 @@ test("first sync only scans the reservation window, never before the launcher ex
   ]);
   const idx = new LongTickerIndexer(d.cfg.chain, d.cfg.rules, d.db, () => {}, chain.client);
   assert.equal(await idx.sync(), 1);
+});
+
+test("reserved-forever mode backfills the whole launcher history", async () => {
+  const d = setup(); // default: TICKER_COOLDOWN_HOURS=0
+  d.cfg.chain.longStartBlock = 1_000_000n;
+  const chain = fakeChain([
+    { block: 1_000_500n, asset: `0x${"b1".repeat(20)}`, symbol: "ANCIENT" }, // ~11.5 days ago
+    { block: 1_999_999n, asset: `0x${"b2".repeat(20)}`, symbol: "FRESH" },
+  ]);
+  const idx = new LongTickerIndexer(d.cfg.chain, d.cfg.rules, d.db, () => {}, chain.client);
+  assert.equal(await idx.sync(), 2);
+  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $ANCIENT", author: author() })).kind, "rejected");
+});
+
+test("concurrent sync calls share one run", async () => {
+  const d = setup();
+  d.cfg.chain.longStartBlock = 1_990_000n;
+  const chain = fakeChain([{ block: 1_995_000n, asset: `0x${"c1".repeat(20)}`, symbol: "ONE" }]);
+  const idx = new LongTickerIndexer(d.cfg.chain, d.cfg.rules, d.db, () => {}, chain.client);
+  const [a, b] = await Promise.all([idx.sync(), idx.sync()]);
+  assert.equal(a, 1);
+  assert.equal(b, 1); // same promise, not a second scan
 });

@@ -65,8 +65,11 @@ export function loadConfig() {
       minAccountAgeDays: int("MIN_ACCOUNT_AGE_DAYS", 30),
       minFollowers: int("MIN_FOLLOWERS", 50),
       launchesPerDay: int("LAUNCHES_PER_DAY", 1),
-      /** A ticker used in the last N hours (by LONGSHOT or on Long.xyz) can't be reused. 0 = never reusable. */
-      tickerCooldownHours: int("TICKER_COOLDOWN_HOURS", 24),
+      /**
+       * A ticker launched in the last N hours (via LONGSHOT or on Long.xyz) is reserved.
+       * 0 (default) = reserved forever, matching what app.long.xyz shows for already-deployed tickers.
+       */
+      tickerCooldownHours: int("TICKER_COOLDOWN_HOURS", 0),
     },
 
     chain: {
