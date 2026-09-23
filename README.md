@@ -60,7 +60,7 @@ Success:
 📈 Paired: $TSLA
 📜 CA: 0x1234…abcd
 🔗 https://app.long.xyz/tokens/0x1234…abcd
-💰 80% of creator fees go to @username — claim: https://<your-domain>/claim
+💰 80% of creator fees go to @username — claim: https://takealongshot.xyz/claim
 ```
 
 Ticker taken:

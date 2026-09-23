@@ -68,6 +68,24 @@ SESSION_SECRET=REPLACE_WITH_A_LONG_RANDOM_STRING
 2. Open `https://YOUR-ADDRESS.up.railway.app/` to see the LONGSHOT website.
 3. If something is wrong, open **Deployments**, click the latest deploy, then **View Logs**. Lines starting with `FATAL:` explain exactly what to fix.
 
+### Step 7. Connect takealongshot.xyz
+
+1. In the LONGSHOT service, open **Settings → Networking → Custom Domain**.
+2. Enter `takealongshot.xyz`, port **8787**, and click **Add**.
+3. Railway shows the DNS record(s) to create — usually a **CNAME** (and sometimes a **TXT** record for verification). Copy the exact values Railway shows.
+4. Log in where you bought the domain and open its **DNS settings**. Add the records exactly as Railway shows them:
+   - For the root domain (`takealongshot.xyz`, often written as `@`), use **CNAME** if your registrar allows it on the root, otherwise **ALIAS/ANAME**. If your registrar supports neither, move the domain's DNS to **Cloudflare** (free), which supports this.
+   - If you use Cloudflare, set the record to **DNS only** (grey cloud) until Railway shows the domain as verified.
+5. Repeat steps 2–4 for `www.takealongshot.xyz` — LONGSHOT automatically redirects `www` to the main domain.
+6. Wait until Railway shows a green check next to the domain (a few minutes, sometimes up to an hour). Railway sets up HTTPS automatically.
+7. In **Variables**, add:
+
+```
+PUBLIC_URL=https://takealongshot.xyz
+```
+
+8. Open **https://takealongshot.xyz/healthz** — you should see `{"ok":true,...}`.
+
 ✅ **Stage 1 done.** In this mode no tweets are read and no real tokens are created.
 
 ---
@@ -100,8 +118,8 @@ SESSION_SECRET=REPLACE_WITH_A_LONG_RANDOM_STRING
    - **Access Token** and **Access Token Secret** — permissions must be **Read and Write** so the bot can reply.
 5. In the App's **User authentication settings**, enable **OAuth 2.0**:
    - Type of App: **Web App**
-   - Callback URL: `https://YOUR-ADDRESS.up.railway.app/auth/x/callback`
-   - Website URL: `https://YOUR-ADDRESS.up.railway.app`
+   - Callback URL: `https://takealongshot.xyz/auth/x/callback`
+   - Website URL: `https://takealongshot.xyz`
    - Note the **Client ID** and **Client Secret**.
 
 ### C. Permission from Long.xyz (strongly recommended)
@@ -114,6 +132,7 @@ Open **Variables** → **Raw Editor** and replace the contents with (fill in the
 
 ```
 PORT=8787
+PUBLIC_URL=https://takealongshot.xyz
 CHAIN_MODE=onchain
 DB_PATH=/data/longshot.db
 SESSION_SECRET=same-random-string-as-stage-1
@@ -144,7 +163,7 @@ Check the logs for `LONGSHOT starting — chain=onchain, treasury=0x…`. The Tr
 2. Within about a minute the bot should reply with the contract address.
 3. Buy a small amount of the token so it earns fees.
 4. Wait about 15 minutes (fees are collected periodically).
-5. Open `https://YOUR-ADDRESS.up.railway.app/claim`, sign in with X, enter your personal wallet, and click **Claim now**.
+5. Open `https://takealongshot.xyz/claim`, sign in with X, enter your personal wallet, and click **Claim now**.
 6. Check your personal wallet: 80% of the fees should arrive.
 7. Tweet `@longdotxyz launch $SI` — the bot should reply `❌ $SI reserved. Try again using another ticker.`
 
@@ -157,6 +176,8 @@ If all of this works, LONGSHOT is ready to announce. 🚀
 | Symptom | Likely cause |
 |---|---|
 | Deploy shows **Crashed** | Open **View Logs** and look for a line starting with `FATAL:` — it names the setting to fix. |
+| takealongshot.xyz does not load | DNS not set up yet or still propagating — check Railway shows a green check next to the domain (Step 7). The `…up.railway.app` address keeps working meanwhile. |
+| "Sign in with X" fails with a callback error | The Callback URL in the X developer portal must be exactly `https://takealongshot.xyz/auth/x/callback`, and `PUBLIC_URL` must be `https://takealongshot.xyz`. |
 | `/healthz` does not load | No domain yet (Step 5), or the deploy failed — check the logs. |
 | `FATAL: TREASURY_PRIVATE_KEY is missing/invalid` | Key missing or mis-copied (64 hex characters, with or without `0x`). |
 | Data disappears after a restart | The Volume is not mounted at `/data` (Step 3). |

@@ -63,6 +63,17 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
 
   const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
+  // Send www.<domain> to the canonical domain from PUBLIC_URL.
+  const canonicalHost = new URL(cfg.publicUrl).host;
+  app.use("*", async (c, next) => {
+    const host = c.req.header("host") ?? "";
+    if (host === `www.${canonicalHost}`) {
+      const url = new URL(c.req.url);
+      return c.redirect(`${cfg.publicUrl}${url.pathname}${url.search}`, 301);
+    }
+    await next();
+  });
+
   app.get("/healthz", (c) => c.json({ ok: true, chain: cfg.chain.mode, x: cfg.x.enabled, tickerIndexFresh: tickersFresh() }));
 
   // ── Landing ────────────────────────────────────────────────────────────────
