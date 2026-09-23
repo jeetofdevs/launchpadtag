@@ -6,9 +6,9 @@ import { formatUnits, getAddress, isAddress, zeroAddress, type Address } from "v
 import { tokenUrl } from "../bot.ts";
 import type { LongClient } from "../chain/index.ts";
 import { claimAll } from "../claim.ts";
-import type { Config } from "../config.ts";
+import { STOCKS, type Config } from "../config.ts";
 import type { DB } from "../db.ts";
-import { balances, feeReport, recentPayouts } from "../ledger.ts";
+import { balances, feeReport, recentPayouts, rewardTotals, type RewardTotals } from "../ledger.ts";
 import { buildMetadata } from "../metadata.ts";
 import { html, layout, raw, type Raw } from "./html.ts";
 import { TOKENOMICS, feeSplit, pct } from "../tokenomics.ts";
@@ -79,7 +79,19 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
   app.get("/healthz", (c) => c.json({ ok: true, chain: cfg.chain.mode, x: cfg.x.enabled, tickerIndexFresh: tickersFresh() }));
 
   // ── Landing ────────────────────────────────────────────────────────────────
-  app.get("/", (c) => {
+  app.get("/", async (c) => {
+    // Headline rewards are shown in the paired Stock Tokens; rewards in launched tokens are counted separately.
+    const stockAssets = new Set(STOCKS.map((st) => long.stockToken(st).toLowerCase()));
+    const totals = rewardTotals(db);
+    const stockTotals = totals.filter((t) => stockAssets.has(t.asset));
+    const tokenAssets = totals.filter((t) => !stockAssets.has(t.asset) && (t.claimed > 0n || t.unclaimed > 0n)).length;
+    const amounts = async (pick: (t: RewardTotals) => bigint) => {
+      const rows = stockTotals.filter((t) => pick(t) > 0n);
+      if (!rows.length) return html`<b>0</b>`;
+      return html`${await Promise.all(rows.map(async (t) => html`<b>${await fmt(t.asset, pick(t))}</b>`))}`;
+    };
+    const claimedHtml = await amounts((t) => t.claimed);
+    const unclaimedHtml = await amounts((t) => t.unclaimed);
     const stats = db
       .prepare("SELECT COUNT(*) AS n, COUNT(DISTINCT x_user_id) AS u FROM launches WHERE status = 'live'")
       .get() as { n: number; u: number };
@@ -136,39 +148,12 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
         <p class="muted small"><sup>*</sup>LONGSHOT's ${pct(fee.share.platform)} includes the ${pct(fee.share.protocol)} Doppler launch-protocol fee. Your ${pct(fee.share.deployer)} is never reduced.</p>
       </div>
 
-      <h3>What could your token earn?</h3>
-      <div class="calc" data-rate="${fee.deployer / 100}">
-        <label for="vol" class="muted">Daily trading volume</label>
-        <div class="chips">
-          <button type="button" data-v="1000">$1K</button><button type="button" data-v="10000" class="on">$10K</button><button type="button" data-v="100000">$100K</button><button type="button" data-v="1000000">$1M</button>
-        </div>
-        <input id="vol" type="range" min="0" max="1000000" step="1000" value="10000" aria-label="Daily trading volume">
-        <div class="calc-out">
-          <div><small>Volume / day</small><b data-o="vol">$10,000</b></div>
-          <div><small>You earn / day</small><b data-o="day" class="ok">$${Math.round(10_000 * fee.deployer / 100)}</b></div>
-          <div><small>/ month</small><b data-o="month">$${(Math.round(10_000 * fee.deployer / 100) * 30).toLocaleString("en-US")}</b></div>
-          <div><small>/ year</small><b data-o="year">$${(Math.round(10_000 * fee.deployer / 100 * 365)).toLocaleString("en-US")}</b></div>
-        </div>
-        <p class="muted small">Illustration only — actual earnings depend entirely on trading volume.</p>
+      <h3>Rewards so far</h3>
+      <div class="rewards-now">
+        <div class="rn"><small>Claimed by deployers</small>${claimedHtml}</div>
+        <div class="rn"><small>Unclaimed — ready to withdraw</small>${unclaimedHtml}</div>
       </div>
-      <script>
-      (() => {
-        const c = document.querySelector(".calc"); if (!c) return;
-        const rate = Number(c.dataset.rate), r = c.querySelector("#vol");
-        const usd = (n) => "$" + Math.round(n).toLocaleString("en-US");
-        const set = (v) => {
-          r.value = v;
-          const day = v * rate;
-          c.querySelector('[data-o="vol"]').textContent = usd(v);
-          c.querySelector('[data-o="day"]').textContent = usd(day);
-          c.querySelector('[data-o="month"]').textContent = usd(Math.round(day) * 30);
-          c.querySelector('[data-o="year"]').textContent = usd(day * 365);
-          c.querySelectorAll(".chips button").forEach((b) => b.classList.toggle("on", Number(b.dataset.v) === Number(v)));
-        };
-        r.addEventListener("input", () => set(Number(r.value)));
-        c.querySelectorAll(".chips button").forEach((b) => b.addEventListener("click", () => set(Number(b.dataset.v))));
-      })();
-      </script>
+      ${tokenAssets > 0 ? html`<p class="muted small">Plus rewards paid in ${tokenAssets} launched token${tokenAssets === 1 ? "" : "s"}. Full breakdown on <a href="/fees">Transparency</a>.</p>` : html`<p class="muted small">Live totals across every LONGSHOT token. Full breakdown on <a href="/fees">Transparency</a>.</p>`}
 
       <div class="card"><div class="muted">LONGSHOT Treasury address</div>
         <a class="mono" href="${long.addressUrl(long.treasury)}">${long.treasury}</a></div>

@@ -74,15 +74,12 @@ h3{font-size:16px;margin:24px 0 10px}
 .reward-big{display:flex;gap:14px;align-items:center;margin-bottom:12px}
 .reward-big b{font-size:clamp(40px,9vw,64px);line-height:1;color:var(--accent);letter-spacing:-.03em}
 .reward-big span{font-size:17px}
-.calc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
-.chips{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
-.chips button{background:transparent;color:var(--text);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font:inherit;font-size:14px;cursor:pointer}
-.chips button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.calc input[type=range]{width:100%;accent-color:var(--accent)}
-.calc-out{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
-.calc-out small{display:block;color:var(--muted);font-size:12px}
-.calc-out b{font-size:22px;font-variant-numeric:tabular-nums}
-@media (max-width:640px){.calc-out{grid-template-columns:repeat(2,1fr)}}
+.rewards-now{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rn{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+.rn small{display:block;color:var(--muted);margin-bottom:6px}
+.rn b{display:block;font-size:24px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.rn:last-child b{color:var(--accent)}
+@media (max-width:560px){.rewards-now{grid-template-columns:1fr}}
 .small{font-size:12px}
 .seg{display:block;min-width:4px}
 .s1{background:var(--accent)}.s2{background:var(--accent-2)}.s3{background:var(--accent-3)}

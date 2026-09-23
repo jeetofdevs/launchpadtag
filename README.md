@@ -91,7 +91,7 @@ Where every trade's 1% fee goes:
 | **Deployer** (the X account that tagged) | **80%** | $0.80 |
 | LONGSHOT | 20% | $0.20 |
 
-LONGSHOT's 20% includes the Doppler launch protocol's mandatory 5% (`PROTOCOL_SHARE_BPS`), so the deployer's 80% is never reduced. Example: $100,000 of daily volume earns the deployer about $800 a day. The home page has an earnings calculator and computes every number from the live config.
+LONGSHOT's 20% includes the Doppler launch protocol's mandatory 5% (`PROTOCOL_SHARE_BPS`), so the deployer's 80% is never reduced. Example: $100,000 of daily volume earns the deployer about $800 a day. The home page shows live platform totals of rewards claimed and still unclaimed, and computes every percentage from the live config.
 
 ---
 

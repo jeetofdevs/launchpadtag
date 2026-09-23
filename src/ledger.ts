@@ -143,3 +143,24 @@ export function recentPayouts(db: DB, limit = 50) {
     )
     .all(limit) as { amount: string; asset: string; to_address: string; tx_hash: string; created_at: number; x_username: string | null }[];
 }
+
+export interface RewardTotals {
+  asset: string;
+  /** Paid out to deployers. */
+  claimed: bigint;
+  /** Deployer rewards collected into the Treasury but not yet claimed (in-flight payouts excluded). */
+  unclaimed: bigint;
+}
+
+/** Platform-wide deployer rewards per asset. */
+export function rewardTotals(db: DB): RewardTotals[] {
+  const earned = db.prepare("SELECT asset, deployer_share AS v FROM fees").all() as { asset: string; v: string }[];
+  const paid = db
+    .prepare("SELECT asset, amount AS v, status FROM payouts WHERE status IN ('pending','sent')")
+    .all() as { asset: string; v: string; status: string }[];
+  const by = new Map<string, { earned: bigint; sent: bigint; pending: bigint }>();
+  const row = (a: string) => by.get(a) ?? by.set(a, { earned: 0n, sent: 0n, pending: 0n }).get(a)!;
+  for (const e of earned) row(e.asset).earned += BigInt(e.v);
+  for (const p of paid) row(p.asset)[p.status === "sent" ? "sent" : "pending"] += BigInt(p.v);
+  return [...by].map(([asset, t]) => ({ asset, claimed: t.sent, unclaimed: t.earned - t.sent - t.pending }));
+}
