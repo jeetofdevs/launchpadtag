@@ -63,8 +63,8 @@ Success:
 ```
 ✅ $ROBO "Robo Tesla" is LIVE on Long.xyz
 📈 Paired: $TSLA
-📜 CA: 0x1234…abcd
-🔗 https://app.long.xyz/tokens/0x1234…abcd
+📜 CA: 0x1234…abcd (full address)
+🔗 https://longshotpad.xyz/token/0x1234…abcd
 💰 @username earns 80% of every trading fee — claim: https://longshotpad.xyz/claim
 ```
 

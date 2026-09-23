@@ -60,7 +60,7 @@ export class XReplier implements Replier {
   }
   async reply(toTweetId: string, text: string) {
     try {
-      await this.client.v2.reply(text.slice(0, 280), toTweetId);
+      await this.client.v2.reply(text, toTweetId);
     } catch (e) {
       throw new Error(describeXError(e));
     }

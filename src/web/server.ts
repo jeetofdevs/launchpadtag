@@ -261,7 +261,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
         <div class="scroll"><table><tr><th>Token</th><th>Paired</th><th>Deployer</th><th>CA</th></tr>
         ${recent.map((r) => html`<tr><td><a href="/t/${r.tweet_id}"><b>$${r.ticker}</b></a> <span class="muted">${r.name}</span></td><td class="nowrap">${logo(r.stock)}$${marketLabel(r.stock)}</td>
           <td><a href="https://x.com/${r.x_username}/status/${r.tweet_id}" target="_blank" rel="noopener">@${r.x_username}</a>${feesTo(r.fee_username)}</td>
-          <td><a class="mono" href="${tokenUrl(cfg, r.token_address)}" target="_blank" rel="noopener">${shortAddr(r.token_address)}</a></td></tr>`)}
+          <td><a class="mono" href="/token/${r.token_address.toLowerCase()}">${shortAddr(r.token_address)}</a></td></tr>`)}
         </table></div>`}
       </section>
 
@@ -350,7 +350,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       ${rows.map((r) => html`<tr><td><a href="/t/${r.tweet_id}"><b>$${r.ticker}</b></a> <span class="muted">${r.name}</span></td><td class="nowrap">${logo(r.stock)}$${marketLabel(r.stock)}</td>
         <td><a href="https://x.com/${r.x_username}" target="_blank" rel="noopener">@${r.x_username}</a>${feesTo(r.fee_username)}</td>
         <td class="nowrap">${new Date(r.created_at).toISOString().slice(0, 10)}</td>
-        <td><a class="mono" href="${tokenUrl(cfg, r.token_address)}" target="_blank" rel="noopener">${shortAddr(r.token_address)}</a></td></tr>`)}
+        <td><a class="mono" href="/token/${r.token_address.toLowerCase()}">${shortAddr(r.token_address)}</a></td></tr>`)}
       </table></div>`}
     `, "Every token launched with LONGSHOT on Long.xyz."));
   });
@@ -363,8 +363,17 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     return c.json(buildMetadata(l, cfg.publicUrl));
   });
 
-  app.get("/t/:tweetId", async (c) => {
-    const l = db.prepare("SELECT * FROM launches WHERE tweet_id = ? AND status = 'live'").get(c.req.param("tweetId")) as
+  // Token page by contract address (what the bot links to), and the older link by launch tweet.
+  app.get("/token/:address", (c) => {
+    const addr = c.req.param("address").toLowerCase();
+    if (!/^0x[0-9a-f]{40}$/.test(addr)) return c.notFound();
+    const row = db.prepare("SELECT tweet_id FROM launches WHERE LOWER(token_address) = ? AND status = 'live'").get(addr) as { tweet_id: string } | undefined;
+    return row ? tokenPage(c, row.tweet_id) : c.notFound();
+  });
+  app.get("/t/:tweetId", (c) => tokenPage(c, c.req.param("tweetId")));
+
+  async function tokenPage(c: Context, tweetId: string) {
+    const l = db.prepare("SELECT * FROM launches WHERE tweet_id = ? AND status = 'live'").get(tweetId) as
       | { tweet_id: string; ticker: string; name: string; stock: string; x_username: string; fee_username: string | null; token_address: string; tx_hash: string; created_at: number; image_url: string | null }
       | undefined;
     if (!l) return c.notFound();
@@ -383,14 +392,14 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
         ${l.fee_username ? html`<div><small>🎁 Fees go to</small><a href="https://x.com/${l.fee_username}" target="_blank" rel="noopener">@${l.fee_username}</a></div>` : raw("")}
         <div><small>Launched</small>${new Date(l.created_at).toISOString().slice(0, 16).replace("T", " ")} UTC</div>
         <div><small>Supply</small>1,000,000,000</div>
-        <div><small>Contract</small><a class="mono" href="${long.addressUrl(l.token_address)}" target="_blank" rel="noopener">${shortAddr(l.token_address)}</a></div>
+        <div><small>Contract (CA)</small><a class="mono" style="word-break:break-all" href="${long.addressUrl(l.token_address)}" target="_blank" rel="noopener">${l.token_address}</a></div>
         <div><small>Launch tx</small><a class="mono" href="${long.txUrl(l.tx_hash)}" target="_blank" rel="noopener">${shortAddr(l.tx_hash)}</a></div>
         <div><small>🔥 Burned by creator</small>${burned > 0n ? await fmt(l.token_address, burned) : "0"}</div>
       </div>
       <h3>Creator rewards</h3>
       ${feeRows.length ? html`<div class="scroll"><table><tr><th>Asset</th><th class="num">Fees collected</th><th class="num">Creator's share</th></tr>${feeRows}</table></div>` : html`<p class="muted">No fees collected yet — fees are collected from the pool regularly.</p>`}
     `, `$${l.ticker} (${l.name}) — launched by @${l.x_username} with LONGSHOT, paired with $${marketLabel(l.stock)}.`));
-  });
+   }
 
   // ── Public transparency ────────────────────────────────────────────────────
   app.get("/fees", async (c) => {
@@ -500,7 +509,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       <div class="row" style="justify-content:space-between"><span class="tag">Claim · @${s.username}</span><a class="muted" href="/logout">Sign out</a></div>
       <h1>Your fees</h1>
       ${flash ? html`<div class="card">${flash}</div>` : raw("")}
-      <p class="muted">Tokens earning for you: ${tokens.length ? tokens.map((t) => html`<a href="${tokenUrl(cfg, t.token_address)}">$${t.ticker}</a> `) : "none yet"}</p>
+      <p class="muted">Tokens earning for you: ${tokens.length ? tokens.map((t) => html`<a href="/token/${t.token_address.toLowerCase()}">$${t.ticker}</a> `) : "none yet"}</p>
       ${sentAway.length ? html`<p class="muted small">🎁 Fees you sent away: ${sentAway.map((t) => html`$${t.ticker} → @${t.fee_username} `)}</p>` : raw("")}
       ${rows.length === 0 ? html`<div class="card muted">No fees for this account yet. Fees are collected from the pools regularly.</div>` : html`
       <div class="scroll"><table><tr><th>Asset</th><th class="num">Total fee</th><th class="num">Your share</th><th class="num">LONGSHOT share</th><th class="num">Paid out</th><th class="num">Claimable</th></tr>${rows}</table></div>`}

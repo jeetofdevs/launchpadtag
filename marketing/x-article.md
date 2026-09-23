@@ -59,7 +59,7 @@ LONGSHOT checks your tweet, launches the token through **Long.xyz's own launcher
 ✅ $MOON "Moon Nvidia" is LIVE on Long.xyz
 📈 Paired: $NVDA
 📜 CA: 0x1234…1e18
-🔗 https://app.long.xyz/tokens/0x…
+🔗 https://longshotpad.xyz/token/0x…
 💰 @you earns 80% of every trading fee — claim: https://longshotpad.xyz/claim
 ```
 

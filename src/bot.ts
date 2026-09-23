@@ -43,6 +43,19 @@ function short(addr: string) {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
+/** The token's page on the LONGSHOT website, keyed by contract address. */
+export function tokenPageUrl(cfg: Config, tokenAddress: string) {
+  return `${cfg.publicUrl}/token/${tokenAddress.toLowerCase()}`;
+}
+
+/** Length as X counts it: every link is 23 characters, emoji and wide characters count double. */
+export function xLength(text: string): number {
+  const noUrls = text.replace(/https?:\/\/\S+/g, "x".repeat(23));
+  let n = 0;
+  for (const ch of noUrls) n += (ch.codePointAt(0) ?? 0) > 0x10ff ? 2 : 1;
+  return n;
+}
+
 export function tokenUrl(cfg: Config, tokenAddress: string) {
   return `${cfg.longAppUrl}/tokens/${tokenAddress}`;
 }
@@ -113,19 +126,19 @@ export async function handleMention(deps: BotDeps, m: Mention, now = Date.now())
       .run(tokenAddress, txHash, m.tweetId);
     log(`live ${m.tweetId} $${cmd.ticker} → ${tokenAddress}`);
 
+    const lines = [
+      `✅ $${cmd.ticker} "${cmd.name}" is LIVE on ${cfg.chain.launchVia === "long" ? "Long.xyz" : "Robinhood Chain"}`,
+      `📈 Paired: $${marketLabel(cmd.stock)}`,
+      `📜 CA: ${tokenAddress}`,
+      `🔗 ${tokenPageUrl(cfg, tokenAddress)}`,
+      recipient
+        ? `🎁 @${m.author.username} sent the fees to @${earner}: ${pct(feeSplit(cfg.chain).share.deployer)} of every trading fee — claim: ${cfg.publicUrl}/claim`
+        : `💰 @${earner} earns ${pct(feeSplit(cfg.chain).share.deployer)} of every trading fee — claim: ${cfg.publicUrl}/claim`,
+    ];
+    // The CA is also in the link, so drop the separate CA line if the reply would be too long for X.
+    const text = xLength(lines.join("\n")) <= 280 ? lines.join("\n") : lines.filter((l) => !l.startsWith("📜")).join("\n");
     await replier
-      .reply(
-        m.tweetId,
-        [
-          `✅ $${cmd.ticker} "${cmd.name}" is LIVE on Long.xyz`,
-          `📈 Paired: $${marketLabel(cmd.stock)}`,
-          `📜 CA: ${short(tokenAddress)}`,
-          `🔗 ${tokenUrl(cfg, tokenAddress)}`,
-          recipient
-            ? `🎁 @${m.author.username} sent the fees to @${earner}: ${pct(feeSplit(cfg.chain).share.deployer)} of every trading fee — claim: ${cfg.publicUrl}/claim`
-            : `💰 @${earner} earns ${pct(feeSplit(cfg.chain).share.deployer)} of every trading fee — claim: ${cfg.publicUrl}/claim`,
-        ].join("\n"),
-      )
+      .reply(m.tweetId, text)
       .catch((e) => log(`reply failed: ${e}`));
     return { kind: "live", tokenAddress, txHash };
   } catch (e) {

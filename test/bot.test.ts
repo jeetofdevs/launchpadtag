@@ -155,3 +155,26 @@ test("@nathanbullish is a dev account by default", async () => {
   assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $NATA", author: me })).kind, "live");
   assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $NATB", author: me })).kind, "live");
 });
+
+test("the reply links to the token page on our website by contract address", async () => {
+  const { createApp } = await import("../src/web/server.ts");
+  const { xLength } = await import("../src/bot.ts");
+  const d = setup();
+  d.cfg.sessionSecret = "x".repeat(32);
+  d.cfg.publicUrl = "https://longshotpad.xyz";
+  const r = await handleMention(d, { tweetId: nextTweetId(), text: '@longshotpadxyz launch $CAPG "Ca Page" paired $NVDA', author: author() });
+  assert.equal(r.kind, "live");
+  const ca = (r as { tokenAddress: string }).tokenAddress.toLowerCase();
+  const reply = d.replier.sent[0].text;
+  assert.ok(reply.includes(`🔗 https://longshotpad.xyz/token/${ca}`));
+  assert.ok(reply.includes(`📜 CA: ${(r as { tokenAddress: string }).tokenAddress}`));
+  assert.ok(xLength(reply) <= 280);
+  const page = await (await createApp(d.cfg, d.db, d.long).request(`https://longshotpad.xyz/token/${ca}`, { headers: { host: "longshotpad.xyz" } })).text();
+  assert.match(page, /\$CAPG/);
+  assert.equal((await createApp(d.cfg, d.db, d.long).request(`https://longshotpad.xyz/token/0x${"0".repeat(40)}`, { headers: { host: "longshotpad.xyz" } })).status, 404);
+
+  // A very long name and username still fit: the separate CA line is dropped (the link has the CA).
+  const long = await handleMention(d, { tweetId: nextTweetId(), text: `@longshotpadxyz launch $LONGNAME "${"N".repeat(32)}" paired $ANTHROPICx1L`, author: author({ id: "x2", username: "a_very_long_name" }) });
+  assert.equal(long.kind, "live");
+  assert.ok(xLength(d.replier.sent[1].text) <= 280);
+});
