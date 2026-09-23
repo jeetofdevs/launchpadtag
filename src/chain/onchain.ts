@@ -31,6 +31,43 @@ class Mutex {
 }
 
 /**
+ * Doppler's market-cap presets put curve boundaries on multiples of 100 (e.g. -116300, -84100), so the
+ * pool's tick spacing must divide 100. 200 (the usual spacing for a 1% fee) makes `create` revert with
+ * TickNotAligned(int24).
+ */
+export const TICK_SPACING = 100;
+
+/** Multicurve launch parameters for one LONGSHOT token (pure, so it can be tested without a chain). */
+export function buildLaunchParams(
+  cfg: Config["chain"],
+  p: CreateTokenParams,
+  a: { protocolOwner: Address; treasury: Address; numeraire: Address },
+) {
+  const protocolShares = (WAD * cfg.protocolShareBps) / BPS;
+  return new MulticurveBuilder(robinhood.id)
+    .tokenConfig({ name: p.name, symbol: p.symbol, tokenURI: p.metadataUri })
+    .saleConfig({
+      // 100% of supply goes into the curve: no team allocation, no presale, nothing held back.
+      initialSupply: parseEther(TOKEN_SUPPLY.toString()),
+      numTokensToSell: parseEther(TOKEN_SUPPLY.toString()),
+      numeraire: a.numeraire,
+    })
+    .withMarketCapPresets({
+      fee: cfg.poolFee,
+      tickSpacing: TICK_SPACING,
+      beneficiaries: [
+        { beneficiary: a.protocolOwner, shares: protocolShares },
+        { beneficiary: a.treasury, shares: WAD - protocolShares },
+      ],
+    })
+    .withGovernance({ type: "noOp" })
+    .withMigration({ type: "noOp" }) // keep the pool locked so beneficiary fees keep streaming
+    .withIntegrator(a.treasury)
+    .withUserAddress(a.treasury)
+    .build();
+}
+
+/**
  * Real integration on Robinhood Chain via the Doppler protocol — the launch infrastructure Long.xyz
  * runs on. Tokens are multicurve pools paired with a Robinhood Stock Token, with the LONGSHOT Treasury
  * as the fee beneficiary (alongside the protocol owner's mandatory minimum share).
@@ -83,28 +120,7 @@ export class OnchainLongClient implements LongClient {
 
   async createToken(p: CreateTokenParams) {
     const protocolOwner = await getAirlockOwner(this.pub);
-    const protocolShares = (WAD * this.cfg.protocolShareBps) / BPS;
-    const params = new MulticurveBuilder(robinhood.id)
-      .tokenConfig({ name: p.name, symbol: p.symbol, tokenURI: p.metadataUri })
-      .saleConfig({
-        // 100% of supply goes into the curve: no team allocation, no presale, nothing held back.
-        initialSupply: parseEther(TOKEN_SUPPLY.toString()),
-        numTokensToSell: parseEther(TOKEN_SUPPLY.toString()),
-        numeraire: this.stockToken(p.stock),
-      })
-      .withMarketCapPresets({
-        fee: this.cfg.poolFee,
-        tickSpacing: 200,
-        beneficiaries: [
-          { beneficiary: protocolOwner, shares: protocolShares },
-          { beneficiary: this.treasury, shares: WAD - protocolShares },
-        ],
-      })
-      .withGovernance({ type: "noOp" })
-      .withMigration({ type: "noOp" }) // keep the pool locked so beneficiary fees keep streaming
-      .withIntegrator(this.treasury)
-      .withUserAddress(this.treasury)
-      .build();
+    const params = buildLaunchParams(this.cfg, p, { protocolOwner, treasury: this.treasury, numeraire: this.stockToken(p.stock) });
     const res = await this.sdk.factory.createMulticurve(params);
     return { tokenAddress: res.tokenAddress, txHash: res.transactionHash };
   }
