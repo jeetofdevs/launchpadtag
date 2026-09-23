@@ -84,19 +84,40 @@ Balasan bot contoh:
 
 ## 4. Creator Fee & Claim
 
-- Token dibuat oleh **wallet bot**, tapi hak creator fee dicatat ke **X user ID** (bukan handle, supaya aman kalau ganti username).
-- Fee terkumpul di kontrak escrow `TagLongVault`.
-- Creator claim lewat `taglong.xyz/claim`: login X (OAuth) → connect wallet → fee di-withdraw ke wallet.
-- Setelah claim pertama, user bisa "bind" wallet sehingga fee berikutnya langsung ke wallet tersebut.
+### Wallet operator: **TAGLONG Treasury**
 
-Pembagian creator fee dari setiap token yang di-launch lewat tag:
+Semua deploy dan claim fee dijalankan dari satu wallet milik operator, disebut **TAGLONG Treasury**:
+
+1. **Deploy** — TAGLONG Treasury memanggil factory Long.xyz, jadi di on-chain yang tercatat sebagai creator token adalah TAGLONG Treasury.
+2. **Klaim dari Long.xyz** — bot secara berkala meng-claim creator fee semua token TAGLONG dari Long.xyz ke TAGLONG Treasury.
+3. **Pencatatan** — setiap fee yang masuk dicatat di DB per token → per **X user ID** deployer (bukan handle, supaya aman kalau ganti username).
+4. **Claim oleh user** — deployer buka `taglong.xyz/claim`, login X (OAuth), connect wallet, lalu TAGLONG Treasury mengirim **80%** dari fee token miliknya ke wallet tersebut. **20%** sisanya tetap di Treasury untuk operasional bot (gas deploy, gas claim, server, X API).
+
+### Pembagian fee
 
 | Penerima | Porsi |
 |---|---|
 | Deployer (akun X yang nge-tag) | 80% |
-| TAGLONG (operasional bot/gas) | 20% |
+| TAGLONG Treasury (operasional bot/gas) | 20% |
 
-> Pembagian ini berlaku untuk bagian fee creator yang diterima dari Long.xyz. Fee protokol Long.xyz sendiri tetap mengikuti ketentuan Long.xyz.
+> Pembagian ini berlaku untuk creator fee yang diterima TAGLONG Treasury dari Long.xyz. Fee protokol Long.xyz sendiri tetap mengikuti ketentuan Long.xyz.
+
+Contoh: token `$ROBO` menghasilkan 1.000 USDC creator fee → deployer claim **800 USDC**, **200 USDC** tetap di Treasury.
+
+### Transparansi
+
+Karena fee ditahan dulu di wallet operator, user perlu bisa memverifikasi bahwa 80% benar-benar dibayar:
+
+- Alamat TAGLONG Treasury dipublikasikan di bio bot dan di website.
+- Halaman publik `taglong.xyz/fees`: per token → total fee yang di-claim dari Long.xyz, jumlah yang sudah dibayar ke deployer, dan tx hash pembayarannya.
+- Halaman claim menampilkan rincian: total fee token, 80% bagian deployer, 20% operasional, dan yang sudah pernah di-claim.
+- **Roadmap:** pindahkan pembagian 80/20 ke smart contract splitter supaya pembayaran otomatis dan tidak perlu percaya ke operator.
+
+### Keamanan wallet operator
+
+- Private key TAGLONG Treasury disimpan di KMS/HSM atau multisig, bukan di file `.env` server.
+- Pisahkan **hot wallet** (gas deploy & kirim claim, saldo kecil) dari **cold wallet** (akumulasi 20% operasional), dan sapu saldo berlebih dari hot ke cold secara berkala.
+- Batas maksimal per transaksi claim + alert kalau ada pengeluaran tidak wajar.
 
 ---
 
@@ -123,6 +144,8 @@ Pembagian creator fee dari setiap token yang di-launch lewat tag:
 | Storage logo | IPFS (Pinata / web3.storage) |
 | DB | Postgres: `launches(tweet_id PK, x_user_id, ticker, name, stock, token_address, tx_hash, status)` |
 | Claim site | Next.js + X OAuth + wallet connect |
+| Wallet operator | TAGLONG Treasury — deploy token, claim fee dari Long.xyz, kirim 80% ke deployer |
+| Ledger fee | Postgres: `fees(token_address, x_user_id, amount_in, paid_out, tx_hash)` |
 
 Regex parser sederhana:
 
