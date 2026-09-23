@@ -16,7 +16,7 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { robinhood } from "viem/chains";
-import { BPS, type Config, type Stock } from "../config.ts";
+import { BPS, TOKEN_SUPPLY, type Config, type Stock } from "../config.ts";
 import { BroadcastUncertainError, type CreateTokenParams, type FeeClaim, type LongClient } from "./types.ts";
 
 /** Serialises async work so balance-delta fee accounting never overlaps a payout. */
@@ -80,8 +80,9 @@ export class OnchainLongClient implements LongClient {
     const params = new MulticurveBuilder(robinhood.id)
       .tokenConfig({ name: p.name, symbol: p.symbol, tokenURI: p.metadataUri })
       .saleConfig({
-        initialSupply: parseEther("1000000000"),
-        numTokensToSell: parseEther("900000000"),
+        // 100% of supply goes into the curve: no team allocation, no presale, nothing held back.
+        initialSupply: parseEther(TOKEN_SUPPLY.toString()),
+        numTokensToSell: parseEther(TOKEN_SUPPLY.toString()),
         numeraire: this.stockToken(p.stock),
       })
       .withMarketCapPresets({

@@ -71,7 +71,32 @@ Ticker taken:
 
 ---
 
-## 3. Fees & claiming
+## 3. Tokenomics
+
+Every token launched with LONGSHOT gets the same fair, fixed setup:
+
+| | |
+|---|---|
+| **Supply** | 1,000,000,000 — fixed, no minting |
+| **Fair launch** | 100% of supply sold through the bonding curve |
+| **Team / presale** | 0% / 0% — no insiders |
+| **Liquidity** | Locked in the pool forever (no migration) |
+| **Pair** | A real Robinhood Stock Token (NVDA, AAPL, MSFT, GOOGL, TSLA, MU, SPCX) |
+| **Trading fee** | 1% per trade |
+
+Where every trade's 1% fee goes:
+
+| Recipient | Share of volume | Share of fee |
+|---|---|---|
+| **Deployer** (the X account that tagged) | 0.76% | 76% |
+| LONGSHOT (bot operations) | 0.19% | 19% |
+| Doppler protocol (launch infrastructure) | 0.05% | 5% |
+
+Example: $10,000 of daily volume earns the deployer about $76 a day. The home page computes these numbers from the live config (`POOL_FEE`, `PROTOCOL_SHARE_BPS`).
+
+---
+
+## 4. Fees & claiming
 
 ### LONGSHOT Treasury
 
@@ -104,7 +129,7 @@ Pools pay fees in **both** pool assets — the Stock Token and the launched toke
 
 ---
 
-## 4. Anti-spam & tickers
+## 5. Anti-spam & tickers
 
 - **Account requirements:** at least 30 days old and 50 followers; protected accounts can't launch.
 - **Rate limit:** 1 launch per account per 24 hours.
@@ -117,7 +142,7 @@ Pools pay fees in **both** pool assets — the Stock Token and the launched toke
 
 ---
 
-## 5. Running locally
+## 6. Running locally
 
 Requires **Node.js ≥ 22.5** (uses the built-in `node:sqlite`, no external database).
 
@@ -150,7 +175,7 @@ The default `CHAIN_MODE=mock` uses a fake launchpad, so everything works without
 
 ---
 
-## 6. On-chain integration
+## 7. On-chain integration
 
 Long.xyz runs on the **Doppler Protocol** on **Robinhood Chain (chain ID 4663)**. A Long.xyz launch is a Doppler multicurve pool paired with a Stock Token, and creator fees stream to **beneficiary** addresses fixed at launch — exactly the LONGSHOT Treasury model.
 
@@ -181,9 +206,9 @@ Long.xyz runs on the **Doppler Protocol** on **Robinhood Chain (chain ID 4663)**
 
 ---
 
-## 7. Branding
+## 8. Branding
 
 - **Name:** LONGSHOT
-- **Tagline:** "One tweet. One token."
+- **Tagline:** "Take a shot on Long." / "One tweet. One token."
 - **Hashtag:** `#LongShot`
 - **Launch tweet:** "No website needed. Tag @longdotxyz with a $TICKER and your token goes live, paired with a real stock. One tweet. One token. 🟢 #LongShot"

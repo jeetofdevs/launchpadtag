@@ -17,6 +17,9 @@ export const DEFAULT_STOCK_TOKENS: Record<Stock, Address> = {
   SPCX: "0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa",
 };
 
+/** Every LONGSHOT token: fixed supply, 100% sold through the fair-launch curve (no team, no presale). */
+export const TOKEN_SUPPLY = 1_000_000_000n;
+
 /** Fee split in basis points. Deployer gets 80%, LONGSHOT Treasury keeps 20%. */
 export const DEPLOYER_SHARE_BPS = 8000n;
 export const BPS = 10000n;

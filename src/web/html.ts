@@ -21,8 +21,8 @@ export function html(strings: TemplateStringsArray, ...values: unknown[]): Raw {
 }
 
 const CSS = `
-:root{--bg:#0b0d0c;--panel:#141816;--line:#232a26;--text:#e9f1ec;--muted:#8a978f;--accent:#35f28a;--accent-ink:#04200f;--danger:#ff6b6b;--warn:#ffc857}
-@media (prefers-color-scheme: light){:root{--bg:#f6f8f7;--panel:#ffffff;--line:#dfe6e2;--text:#0e1511;--muted:#5d6b63;--accent:#0fae57;--accent-ink:#ffffff;--danger:#c62828;--warn:#9a6700}}
+:root{--bg:#0b0d0c;--panel:#141816;--line:#232a26;--text:#e9f1ec;--muted:#8a978f;--accent:#35f28a;--accent-ink:#04200f;--accent-2:#1f8f53;--accent-3:#4b5a52;--danger:#ff6b6b;--warn:#ffc857}
+@media (prefers-color-scheme: light){:root{--bg:#f6f8f7;--panel:#ffffff;--line:#dfe6e2;--text:#0e1511;--muted:#5d6b63;--accent:#0fae57;--accent-ink:#ffffff;--accent-2:#7fd6a6;--accent-3:#b7c4bc;--danger:#c62828;--warn:#9a6700}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 a{color:var(--accent)}
@@ -58,6 +58,20 @@ input[type=text]{width:100%;background:var(--bg);color:var(--text);border:1px so
 .ok{color:var(--accent)}.err{color:var(--danger)}.warn{color:var(--warn)}
 .mono{font-family:ui-monospace,monospace;word-break:break-all}
 ol.steps{padding-left:20px}ol.steps li{margin:8px 0}
+.hero{padding:8px 0 20px}
+.hero .row{margin:20px 0}
+h3{font-size:16px;margin:24px 0 10px}
+.tk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0}
+@media (max-width:640px){.tk-grid{grid-template-columns:repeat(2,1fr)}}
+.tk{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.tk b{display:block;font-size:22px;letter-spacing:-.01em}
+.tk small{color:var(--muted)}
+.split{display:flex;gap:2px;height:16px;border-radius:8px;overflow:hidden;margin:8px 0 12px}
+.seg{display:block;min-width:4px}
+.s1{background:var(--accent)}.s2{background:var(--accent-2)}.s3{background:var(--accent-3)}
+.legend{list-style:none;padding:0;margin:0 0 12px}
+.legend li{margin:8px 0;padding-left:18px;position:relative}
+.dot{position:absolute;left:0;top:.45em;width:10px;height:10px;border-radius:3px}
 footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;padding:20px 0}
 `;
 

@@ -11,6 +11,7 @@ import type { DB } from "../db.ts";
 import { balances, feeReport, recentPayouts } from "../ledger.ts";
 import { buildMetadata } from "../metadata.ts";
 import { html, layout, raw } from "./html.ts";
+import { TOKENOMICS, feeSplit, pct } from "../tokenomics.ts";
 
 interface Session {
   uid: string;
@@ -73,23 +74,52 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       .prepare("SELECT tweet_id, ticker, name, stock, x_username, token_address FROM launches WHERE status = 'live' ORDER BY created_at DESC LIMIT 10")
       .all() as { tweet_id: string; ticker: string; name: string; stock: string; x_username: string; token_address: string }[];
     const h = cfg.x.triggerHandle;
+    const fee = feeSplit(cfg.chain);
+    const shotUrl = `https://x.com/intent/post?text=${encodeURIComponent(`@${h} launch $TICKER "Token Name" paired $NVDA`)}`;
     return c.html(layout("LONGSHOT", html`
-      <span class="tag">Launch by tag · Long.xyz</span>
-      <h1>One tweet.<br>One token.</h1>
-      <p class="lead">Tag <b>@${h}</b> with a ticker and LONGSHOT launches your token on Long.xyz, paired with a tokenized Robinhood stock. You earn <b>80% of creator fees</b>.</p>
-      <pre>@${h} launch $ROBO "Robo Tesla" paired $TSLA</pre>
+      <section class="hero">
+        <span class="tag">Take a shot on Long</span>
+        <h1>One tweet.<br>One token.</h1>
+        <p class="lead">Tag <b>@${h}</b> with a ticker and LONGSHOT launches your token on Long.xyz, paired with a real tokenized stock. Every trade pays you — <b>${pct(fee.deployer)} of volume, forever</b>.</p>
+        <div class="row"><a class="btn" href="${shotUrl}" target="_blank" rel="noopener">Take your shot on X →</a><a class="btn ghost" href="#tokenomics">Tokenomics</a></div>
+        <pre>@${h} launch $ROBO "Robo Tesla" paired $TSLA</pre>
+      </section>
       <div class="grid">
         <div class="stat"><b>${stats.n}</b><small>tokens live</small></div>
         <div class="stat"><b>${stats.u}</b><small>deployers</small></div>
-        <div class="stat"><b>80%</b><small>of fees to deployers</small></div>
+        <div class="stat"><b>80%</b><small>of creator fees to you</small></div>
       </div>
+
       <h2>How it works</h2>
       <ol class="steps">
-        <li>Tweet <code>@${h} launch $TICKER</code>. Optional: <code>"Token Name"</code>, <code>paired $NVDA|AAPL|MSFT|GOOGL|TSLA|MU|SPCX</code>, and a photo for the logo.</li>
-        <li>LONGSHOT deploys the token from the <b>LONGSHOT Treasury</b> wallet and replies to your tweet with the contract address.</li>
-        <li>Creator fees are collected into the Treasury regularly and credited to your X account.</li>
-        <li>Open <a href="/claim">/claim</a>, sign in with X, enter your wallet — 80% is sent to you. 20% covers bot operations.</li>
+        <li><b>Tweet it.</b> <code>@${h} launch $TICKER</code>. Optional: <code>"Token Name"</code>, <code>paired $NVDA|AAPL|MSFT|GOOGL|TSLA|MU|SPCX</code>, and a photo for the logo.</li>
+        <li><b>It's live.</b> LONGSHOT deploys your token and replies with the contract address — usually within a minute.</li>
+        <li><b>Get paid.</b> Every trade earns creator fees, credited to your X account.</li>
+        <li><b>Claim.</b> Open <a href="/claim">/claim</a>, sign in with X, and withdraw your 80% to any wallet.</li>
       </ol>
+
+      <h2 id="tokenomics">Tokenomics</h2>
+      <p class="muted">Every token launched with LONGSHOT gets the same fair, fixed setup.</p>
+      <div class="tk-grid">
+        <div class="tk"><b>1B</b><small>${Number(TOKENOMICS.supply).toLocaleString("en-US")} fixed supply — no minting, ever</small></div>
+        <div class="tk"><b>${TOKENOMICS.curvePct}%</b><small>fair launch on the bonding curve</small></div>
+        <div class="tk"><b>${TOKENOMICS.teamPct}%</b><small>team · ${TOKENOMICS.presalePct}% presale · no insiders</small></div>
+        <div class="tk"><b>Locked</b><small>liquidity stays in the pool forever</small></div>
+        <div class="tk"><b>Stock-paired</b><small>trades against a real Robinhood Stock Token</small></div>
+        <div class="tk"><b>${pct(fee.poolFee)}</b><small>trading fee, shared below</small></div>
+      </div>
+
+      <h3>Where every trade's ${pct(fee.poolFee)} fee goes</h3>
+      <div class="split" role="img" aria-label="Fee split: ${pct(fee.deployer)} to the deployer, ${pct(fee.longshot)} to LONGSHOT, ${pct(fee.protocol)} to the Doppler protocol">
+        <span class="seg s1" style="flex:${fee.deployer}"></span><span class="seg s2" style="flex:${fee.longshot}"></span><span class="seg s3" style="flex:${fee.protocol}"></span>
+      </div>
+      <ul class="legend">
+        <li><i class="dot s1"></i><b>${pct(fee.deployer)}</b> of volume → <b>you</b>, the deployer (80% of creator fees)</li>
+        <li><i class="dot s2"></i><b>${pct(fee.longshot)}</b> → LONGSHOT, to keep the bot running (20% of creator fees)</li>
+        <li><i class="dot s3"></i><b>${pct(fee.protocol)}</b> → Doppler protocol, the launch infrastructure</li>
+      </ul>
+      <p class="muted">Fees are paid in both sides of the pool — the paired stock and your token. Example: $10,000 of daily volume earns you about $${Math.round(10_000 * fee.deployer / 100)} a day.</p>
+
       <div class="card"><div class="muted">LONGSHOT Treasury address</div>
         <a class="mono" href="${long.addressUrl(long.treasury)}">${long.treasury}</a></div>
       <h2>Latest launches</h2>
