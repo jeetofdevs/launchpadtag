@@ -93,6 +93,27 @@ export function tx<T>(db: DB, fn: () => T): T {
   }
 }
 
+/**
+ * Mock mode invents token addresses, fees and payouts. The first time the same database is started
+ * in onchain mode, that fake data is removed so the harvester never touches made-up addresses and
+ * the website only lists real tokens. Returns how many fake launches were removed.
+ */
+export function dropMockDataOnSwitch(db: DB, mode: "mock" | "onchain"): number {
+  const prev = getKv(db, "chain_mode");
+  let removed = 0;
+  if (mode === "onchain" && prev !== "onchain") {
+    const hadMock = prev === "mock" || (db.prepare("SELECT COUNT(*) AS n FROM launches").get() as { n: number }).n > 0;
+    if (hadMock) {
+      removed = (db.prepare("SELECT COUNT(*) AS n FROM launches").get() as { n: number }).n;
+      tx(db, () => {
+        db.exec("DELETE FROM payouts; DELETE FROM fees; DELETE FROM launches;");
+      });
+    }
+  }
+  setKv(db, "chain_mode", mode);
+  return removed;
+}
+
 export function getKv(db: DB, key: string): string | undefined {
   const row = db.prepare("SELECT value FROM kv WHERE key = ?").get(key) as { value: string } | undefined;
   return row?.value;

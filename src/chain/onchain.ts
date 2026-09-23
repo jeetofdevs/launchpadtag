@@ -8,6 +8,7 @@ import {
   createPublicClient,
   createWalletClient,
   erc20Abi,
+  formatEther,
   http,
   isAddress,
   parseEther,
@@ -55,6 +56,11 @@ export class OnchainLongClient implements LongClient {
     this.pub = createPublicClient({ chain: robinhood, transport });
     this.wallet = createWalletClient({ chain: robinhood, account, transport });
     this.sdk = new DopplerSDK({ publicClient: this.pub, walletClient: this.wallet, chainId: robinhood.id });
+  }
+
+  /** Native ETH the Treasury holds for gas, formatted. */
+  async gasBalance(): Promise<string> {
+    return formatEther(await this.pub.getBalance({ address: this.treasury }));
   }
 
   stockToken(stock: Stock): Address {

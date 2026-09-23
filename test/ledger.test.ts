@@ -140,3 +140,19 @@ test("a transfer that fails (e.g. reverted) releases the balance so it can be cl
   assert.ok(ok.every((r) => r.txHash && !r.error));
   assert.equal(balances(d.db, "42").find((b) => b.asset === d.stock)!.claimable, 0n);
 });
+
+test("switching the same database from mock to onchain drops fake launches once", async () => {
+  const { dropMockDataOnSwitch } = await import("../src/db.ts");
+  const d = await launched(1000n);
+  await harvestFees(d.db, d.long);
+  await claimAll(d.db, d.long, "42", TO, 0n);
+  const count = (t: string) => (d.db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get() as { n: number }).n;
+  assert.equal(dropMockDataOnSwitch(d.db, "mock"), 0);
+  assert.ok(count("launches") > 0);
+  assert.equal(dropMockDataOnSwitch(d.db, "onchain"), 1);
+  assert.equal(count("launches") + count("fees") + count("payouts"), 0);
+  // Real launches made after the switch are never touched again.
+  d.db.prepare("INSERT INTO launches(tweet_id, x_user_id, x_username, ticker, name, stock, status, created_at) VALUES('1','1','a','REAL','Real','NVDA','live',1)").run();
+  assert.equal(dropMockDataOnSwitch(d.db, "onchain"), 0);
+  assert.equal(count("launches"), 1);
+});

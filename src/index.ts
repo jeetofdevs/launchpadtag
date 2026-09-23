@@ -2,9 +2,10 @@ import { randomBytes } from "node:crypto";
 import { serve } from "@hono/node-server";
 import { handleMention, type Replier } from "./bot.ts";
 import { createLongClient } from "./chain/index.ts";
+import { OnchainLongClient } from "./chain/onchain.ts";
 import { LongTickerIndexer } from "./chain/tickers.ts";
 import { loadConfig } from "./config.ts";
-import { getKv, openDb, setKv } from "./db.ts";
+import { dropMockDataOnSwitch, getKv, openDb, setKv } from "./db.ts";
 import { harvestFees } from "./harvester.ts";
 import { createApp } from "./web/server.ts";
 import { ConsoleReplier, XMentionSource, XReplier, describeXError } from "./x/client.ts";
@@ -35,6 +36,8 @@ try {
     cfg.sessionSecret = secret;
   }
   long = createLongClient(cfg.chain);
+  const removed = dropMockDataOnSwitch(db, cfg.chain.mode);
+  if (removed) log(`switched to onchain: removed ${removed} test launch(es) and their fake fees/payouts from mock mode.`);
 } catch (e) {
   fatal(e);
 }
@@ -53,6 +56,15 @@ function every(ms: number, name: string, fn: () => Promise<unknown>) {
     }
   };
   void tick();
+}
+
+if (long instanceof OnchainLongClient) {
+  long.gasBalance().then(
+    (eth) => log(Number(eth) > 0
+      ? `Treasury ${long.treasury} has ${eth} ETH for gas on Robinhood Chain.`
+      : `WARNING: Treasury ${long.treasury} has 0 ETH on Robinhood Chain — launches and claims will fail until you send it some ETH for gas.`),
+    (e) => log(`could not read Treasury balance: ${e instanceof Error ? e.message : e}`),
+  );
 }
 
 // Know every ticker Long.xyz has handed out, so we respect its reservations.
