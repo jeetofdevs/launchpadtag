@@ -89,13 +89,14 @@ Balasan bot contoh:
 - Creator claim lewat `taglong.xyz/claim`: login X (OAuth) → connect wallet → fee di-withdraw ke wallet.
 - Setelah claim pertama, user bisa "bind" wallet sehingga fee berikutnya langsung ke wallet tersebut.
 
-Usulan pembagian fee trading (contoh, bisa disesuaikan dengan struktur fee Long.xyz):
+Pembagian creator fee dari setiap token yang di-launch lewat tag:
 
 | Penerima | Porsi |
 |---|---|
-| Creator (yang nge-tag) | 50% |
-| Protokol Long.xyz | 40% |
-| TAGLONG (operasional bot/gas) | 10% |
+| Deployer (akun X yang nge-tag) | 80% |
+| TAGLONG (operasional bot/gas) | 20% |
+
+> Pembagian ini berlaku untuk bagian fee creator yang diterima dari Long.xyz. Fee protokol Long.xyz sendiri tetap mengikuti ketentuan Long.xyz.
 
 ---
 
