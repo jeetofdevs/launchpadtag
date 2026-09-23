@@ -62,11 +62,11 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
 `;
 
 export function layout(title: string, body: Raw): string {
-  return `<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title><style>${CSS}</style></head><body>
 <header><div class="wrap"><a class="logo" href="/">LONG<span>SHOT</span></a>
-<nav><a href="/fees">Transparansi</a><a href="/claim">Claim</a></nav></div></header>
+<nav><a href="/fees">Transparency</a><a href="/claim">Claim</a></nav></div></header>
 <main><div class="wrap">${body.html}</div></main>
-<footer><div class="wrap">LONGSHOT adalah bot independen yang men-deploy token di Long.xyz atas nama deployer. Deployer menerima 80% creator fee, 20% untuk operasional bot. Bot tidak pernah DM duluan &amp; tidak pernah meminta seed phrase.</div></footer>
+<footer><div class="wrap">LONGSHOT is an independent bot that launches tokens on Long.xyz on behalf of the person who tags it. Deployers receive 80% of creator fees; 20% covers bot operations. LONGSHOT never DMs first and will never ask for your seed phrase.</div></footer>
 </body></html>`;
 }

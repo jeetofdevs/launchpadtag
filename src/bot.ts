@@ -63,7 +63,7 @@ export async function handleMention(deps: BotDeps, m: Mention, now = Date.now())
       m.imageUrl ?? null, m.originTweetId ?? null, "rejected", verdict.reason, now);
     const text = verdict.reserved
       ? `❌ $${cmd.ticker} reserved. Try again using another ticker.`
-      : `❌ Gagal launch $${cmd.ticker}: ${verdict.reason}.`;
+      : `❌ Could not launch $${cmd.ticker}: ${verdict.reason}.`;
     await replier.reply(m.tweetId, text).catch((e) => log(`reply failed: ${e}`));
     log(`rejected ${m.tweetId} $${cmd.ticker}: ${verdict.reason}`);
     return { kind: "rejected", reason: verdict.reason };
@@ -90,11 +90,11 @@ export async function handleMention(deps: BotDeps, m: Mention, now = Date.now())
       .reply(
         m.tweetId,
         [
-          `✅ $${cmd.ticker} "${cmd.name}" LIVE di @${cfg.x.triggerHandle}`,
+          `✅ $${cmd.ticker} "${cmd.name}" is LIVE on @${cfg.x.triggerHandle}`,
           `📈 Paired: $${cmd.stock}`,
           `📜 CA: ${short(tokenAddress)}`,
           `🔗 ${tokenUrl(cfg, tokenAddress)}`,
-          `💰 80% creator fee untuk @${m.author.username} — claim: ${cfg.publicUrl}/claim`,
+          `💰 80% of creator fees go to @${m.author.username} — claim: ${cfg.publicUrl}/claim`,
         ].join("\n"),
       )
       .catch((e) => log(`reply failed: ${e}`));
@@ -104,7 +104,7 @@ export async function handleMention(deps: BotDeps, m: Mention, now = Date.now())
     db.prepare("UPDATE launches SET status = 'failed', reason = ? WHERE tweet_id = ?").run(error.slice(0, 500), m.tweetId);
     log(`failed ${m.tweetId} $${cmd.ticker}: ${error}`);
     await replier
-      .reply(m.tweetId, `⚠️ Launch $${cmd.ticker} gagal karena gangguan teknis. Coba lagi dengan tweet baru sebentar lagi.`)
+      .reply(m.tweetId, `⚠️ Launch of $${cmd.ticker} failed due to a technical issue. Please try again with a new tweet in a moment.`)
       .catch((err) => log(`reply failed: ${err}`));
     return { kind: "failed", error };
   }

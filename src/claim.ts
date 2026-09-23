@@ -31,7 +31,7 @@ export async function claimAll(
       const error = e instanceof Error ? e.message : String(e);
       if (e instanceof BroadcastUncertainError) {
         markPayoutUncertain(db, reserved.id, e.txHash, error);
-        results.push({ asset: b.asset, amount: reserved.amount, txHash: e.txHash, error: "menunggu konfirmasi" });
+        results.push({ asset: b.asset, amount: reserved.amount, txHash: e.txHash, error: "awaiting confirmation" });
       } else {
         failPayout(db, reserved.id, error);
         results.push({ asset: b.asset, amount: reserved.amount, error });

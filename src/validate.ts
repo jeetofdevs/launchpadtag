@@ -32,16 +32,16 @@ export function validateLaunch(
   author: Author,
   now = Date.now(),
 ): Verdict {
-  if (author.protected) return { ok: false, reason: "akun private tidak bisa launch" };
+  if (author.protected) return { ok: false, reason: "protected accounts cannot launch" };
 
   const ageDays = (now - author.createdAt.getTime()) / DAY;
   if (ageDays < rules.minAccountAgeDays)
-    return { ok: false, reason: `umur akun minimal ${rules.minAccountAgeDays} hari` };
+    return { ok: false, reason: `account must be at least ${rules.minAccountAgeDays} days old` };
 
   if (author.followers < rules.minFollowers)
-    return { ok: false, reason: `minimal ${rules.minFollowers} followers` };
+    return { ok: false, reason: `account needs at least ${rules.minFollowers} followers` };
 
-  if (BLOCKED_TICKERS.has(cmd.ticker)) return { ok: false, reason: "ticker milik saham/aset asli", reserved: true };
+  if (BLOCKED_TICKERS.has(cmd.ticker)) return { ok: false, reason: "ticker belongs to a real stock/asset", reserved: true };
 
   // Same rule as Long.xyz: a ticker that has been launched is reserved (for TICKER_COOLDOWN_HOURS; 0 = forever).
   const since = rules.tickerCooldownHours > 0 ? now - rules.tickerCooldownHours * 60 * 60 * 1000 : 0;
@@ -51,12 +51,12 @@ export function validateLaunch(
       "SELECT token_address FROM launches WHERE ticker = ? AND created_at > ? AND status IN ('queued','deploying','live') ORDER BY created_at DESC LIMIT 1",
     )
     .get(cmd.ticker, since) as { token_address: string | null } | undefined;
-  if (dup) return { ok: false, reason: "sudah di-launch lewat LONGSHOT", existingToken: dup.token_address ?? undefined, reserved: true };
+  if (dup) return { ok: false, reason: "already launched via LONGSHOT", existingToken: dup.token_address ?? undefined, reserved: true };
 
   const external = db
     .prepare("SELECT asset FROM external_launches WHERE symbol = ? AND launched_at > ? ORDER BY launched_at DESC LIMIT 1")
     .get(cmd.ticker, since) as { asset: string } | undefined;
-  if (external) return { ok: false, reason: "sudah di-launch di Long.xyz", existingToken: external.asset, reserved: true };
+  if (external) return { ok: false, reason: "already launched on Long.xyz", existingToken: external.asset, reserved: true };
 
   const recentByUser = db
     .prepare(
@@ -64,7 +64,7 @@ export function validateLaunch(
     )
     .get(author.id, now - DAY) as { n: number };
   if (recentByUser.n >= rules.launchesPerDay)
-    return { ok: false, reason: `maksimal ${rules.launchesPerDay} launch per 24 jam` };
+    return { ok: false, reason: `limit is ${rules.launchesPerDay} launch(es) per 24 hours` };
 
   return { ok: true };
 }

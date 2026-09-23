@@ -76,24 +76,24 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     return c.html(layout("LONGSHOT", html`
       <span class="tag">Launch by tag · Long.xyz</span>
       <h1>One tweet.<br>One token.</h1>
-      <p class="lead">Tag <b>@${h}</b> dengan ticker, dan LONGSHOT langsung launch token kamu di Long.xyz — paired ke saham tokenized Robinhood. Kamu dapat <b>80% creator fee</b>.</p>
+      <p class="lead">Tag <b>@${h}</b> with a ticker and LONGSHOT launches your token on Long.xyz, paired with a tokenized Robinhood stock. You earn <b>80% of creator fees</b>.</p>
       <pre>@${h} launch $ROBO "Robo Tesla" paired $TSLA</pre>
       <div class="grid">
-        <div class="stat"><b>${stats.n}</b><small>token live</small></div>
-        <div class="stat"><b>${stats.u}</b><small>deployer</small></div>
-        <div class="stat"><b>80%</b><small>fee ke deployer</small></div>
+        <div class="stat"><b>${stats.n}</b><small>tokens live</small></div>
+        <div class="stat"><b>${stats.u}</b><small>deployers</small></div>
+        <div class="stat"><b>80%</b><small>of fees to deployers</small></div>
       </div>
-      <h2>Cara kerja</h2>
+      <h2>How it works</h2>
       <ol class="steps">
-        <li>Tweet <code>@${h} launch $TICKER</code>. Opsional: <code>"Nama Token"</code>, <code>paired $NVDA|AAPL|MSFT|GOOGL|TSLA|MU|SPCX</code>, dan foto sebagai logo.</li>
-        <li>LONGSHOT men-deploy token dari wallet <b>LONGSHOT Treasury</b> dan membalas tweet kamu dengan contract address.</li>
-        <li>Creator fee di-claim berkala ke Treasury dan dicatat atas nama akun X kamu.</li>
-        <li>Buka <a href="/claim">/claim</a>, login X, masukkan wallet — 80% dikirim ke kamu. 20% untuk operasional bot.</li>
+        <li>Tweet <code>@${h} launch $TICKER</code>. Optional: <code>"Token Name"</code>, <code>paired $NVDA|AAPL|MSFT|GOOGL|TSLA|MU|SPCX</code>, and a photo for the logo.</li>
+        <li>LONGSHOT deploys the token from the <b>LONGSHOT Treasury</b> wallet and replies to your tweet with the contract address.</li>
+        <li>Creator fees are collected into the Treasury regularly and credited to your X account.</li>
+        <li>Open <a href="/claim">/claim</a>, sign in with X, enter your wallet — 80% is sent to you. 20% covers bot operations.</li>
       </ol>
-      <div class="card"><div class="muted">Alamat LONGSHOT Treasury</div>
+      <div class="card"><div class="muted">LONGSHOT Treasury address</div>
         <a class="mono" href="${long.addressUrl(long.treasury)}">${long.treasury}</a></div>
-      <h2>Launch terbaru</h2>
-      ${recent.length === 0 ? html`<p class="muted">Belum ada token. Jadi yang pertama.</p>` : html`
+      <h2>Latest launches</h2>
+      ${recent.length === 0 ? html`<p class="muted">No tokens yet. Be the first.</p>` : html`
       <div class="scroll"><table><tr><th>Token</th><th>Paired</th><th>Deployer</th><th>CA</th></tr>
       ${recent.map((r) => html`<tr><td><b>$${r.ticker}</b> <span class="muted">${r.name}</span></td><td>$${r.stock}</td>
         <td><a href="https://x.com/${r.x_username}/status/${r.tweet_id}">@${r.x_username}</a></td>
@@ -131,17 +131,17 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       <td>${p.x_username ? `@${p.x_username}` : "—"}</td>
       <td class="num">${await fmt(p.asset, BigInt(p.amount))}</td>
       <td><a class="mono" href="${long.txUrl(p.tx_hash)}">${shortAddr(p.tx_hash)}</a></td></tr>`));
-    return c.html(layout("Transparansi fee · LONGSHOT", html`
-      <span class="tag">Transparansi</span>
-      <h1>Ke mana fee-nya?</h1>
-      <p class="lead">Semua creator fee masuk ke LONGSHOT Treasury, lalu 80% dibayar ke deployer saat claim. Cocokkan setiap angka di bawah dengan explorer.</p>
+    return c.html(layout("Fee transparency · LONGSHOT", html`
+      <span class="tag">Transparency</span>
+      <h1>Where do the fees go?</h1>
+      <p class="lead">All creator fees go to the LONGSHOT Treasury, and 80% is paid to the deployer on claim. Every number below can be checked on the explorer.</p>
       <div class="card"><div class="muted">LONGSHOT Treasury</div><a class="mono" href="${long.addressUrl(long.treasury)}">${long.treasury}</a></div>
-      <h2>Fee per token</h2>
-      ${rows.length === 0 ? html`<p class="muted">Belum ada fee yang di-claim.</p>` : html`
-      <div class="scroll"><table><tr><th>Token</th><th>Deployer</th><th class="num">Total fee</th><th class="num">80% deployer</th><th class="num">20% operasional</th></tr>${rows}</table></div>`}
-      <h2>Pembayaran ke deployer</h2>
-      ${prow.length === 0 ? html`<p class="muted">Belum ada pembayaran.</p>` : html`
-      <div class="scroll"><table><tr><th>Waktu (UTC)</th><th>Deployer</th><th class="num">Jumlah</th><th>Tx</th></tr>${prow}</table></div>`}
+      <h2>Fees per token</h2>
+      ${rows.length === 0 ? html`<p class="muted">No fees collected yet.</p>` : html`
+      <div class="scroll"><table><tr><th>Token</th><th>Deployer</th><th class="num">Total fee</th><th class="num">80% deployer</th><th class="num">20% operations</th></tr>${rows}</table></div>`}
+      <h2>Payouts to deployers</h2>
+      ${prow.length === 0 ? html`<p class="muted">No payouts yet.</p>` : html`
+      <div class="scroll"><table><tr><th>Time (UTC)</th><th>Deployer</th><th class="num">Amount</th><th>Tx</th></tr>${prow}</table></div>`}
     `));
   });
 
@@ -149,7 +149,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
   const callbackUrl = `${cfg.publicUrl}/auth/x/callback`;
 
   app.get("/auth/x", async (c) => {
-    if (!cfg.x.oauthClientId) return c.text("X OAuth belum dikonfigurasi (X_OAUTH_CLIENT_ID).", 503);
+    if (!cfg.x.oauthClientId) return c.text("Sign in with X is not configured yet.", 503);
     const client = new TwitterApi({ clientId: cfg.x.oauthClientId, clientSecret: cfg.x.oauthClientSecret || undefined });
     const { url, codeVerifier, state } = client.generateOAuth2AuthLink(callbackUrl, { scope: ["users.read", "tweet.read"] });
     await setSignedCookie(c, OAUTH, JSON.stringify({ codeVerifier, state }), secret, {
@@ -162,9 +162,9 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     const raw_ = await getSignedCookie(c, secret, OAUTH);
     deleteCookie(c, OAUTH, { path: "/auth" });
     const { state, code } = c.req.query();
-    if (!raw_ || !state || !code) return c.text("Login gagal, coba lagi.", 400);
+    if (!raw_ || !state || !code) return c.text("Sign-in failed, please try again.", 400);
     const saved = JSON.parse(raw_) as { codeVerifier: string; state: string };
-    if (saved.state !== state) return c.text("State tidak cocok, coba lagi.", 400);
+    if (saved.state !== state) return c.text("Sign-in session expired, please try again.", 400);
     const client = new TwitterApi({ clientId: cfg.x.oauthClientId, clientSecret: cfg.x.oauthClientSecret || undefined });
     const { client: user } = await client.loginWithOAuth2({ code, codeVerifier: saved.codeVerifier, redirectUri: callbackUrl });
     const { data: me } = await user.v2.me();
@@ -191,10 +191,10 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     const s = await session(c);
     if (!s) {
       return c.html(layout("Claim fee · LONGSHOT", html`
-        <span class="tag">Claim</span><h1>Ambil 80% fee kamu</h1>
-        <p class="lead">Login dengan akun X yang kamu pakai untuk nge-tag. Fee dicatat berdasarkan ID akun X, jadi aman walau kamu ganti username.</p>
-        <p><a class="btn" href="/auth/x">Login dengan X</a></p>
-        ${devLogin ? html`<p class="muted">Mode dev: <a href="/auth/dev?uid=1001&username=degen">login sebagai @degen</a></p>` : raw("")}
+        <span class="tag">Claim</span><h1>Claim your 80%</h1>
+        <p class="lead">Sign in with the X account you tagged from. Fees are tracked by X account ID, so they stay yours even if you change your username.</p>
+        <p><a class="btn" href="/auth/x">Sign in with X</a></p>
+        ${devLogin ? html`<p class="muted">Test mode: <a href="/auth/dev?uid=1001&username=degen">sign in as @degen</a></p>` : raw("")}
       `));
     }
 
@@ -215,19 +215,19 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     if (flash) deleteCookie(c, FLASH, { path: "/claim" });
 
     return c.html(layout("Claim fee · LONGSHOT", html`
-      <div class="row" style="justify-content:space-between"><span class="tag">Claim · @${s.username}</span><a class="muted" href="/logout">Logout</a></div>
-      <h1>Fee kamu</h1>
+      <div class="row" style="justify-content:space-between"><span class="tag">Claim · @${s.username}</span><a class="muted" href="/logout">Sign out</a></div>
+      <h1>Your fees</h1>
       ${flash ? html`<div class="card">${flash}</div>` : raw("")}
-      <p class="muted">Token kamu: ${tokens.length ? tokens.map((t) => html`<a href="${tokenUrl(cfg, t.token_address)}">$${t.ticker}</a> `) : "belum ada"}</p>
-      ${rows.length === 0 ? html`<div class="card muted">Belum ada fee yang masuk untuk akun ini. Fee di-claim dari Long.xyz secara berkala.</div>` : html`
-      <div class="scroll"><table><tr><th>Aset</th><th class="num">Total fee</th><th class="num">80% kamu</th><th class="num">20% operasional</th><th class="num">Sudah dibayar</th><th class="num">Bisa di-claim</th></tr>${rows}</table></div>`}
+      <p class="muted">Your tokens: ${tokens.length ? tokens.map((t) => html`<a href="${tokenUrl(cfg, t.token_address)}">$${t.ticker}</a> `) : "none yet"}</p>
+      ${rows.length === 0 ? html`<div class="card muted">No fees for this account yet. Fees are collected from the pools regularly.</div>` : html`
+      <div class="scroll"><table><tr><th>Asset</th><th class="num">Total fee</th><th class="num">Your 80%</th><th class="num">20% operations</th><th class="num">Paid out</th><th class="num">Claimable</th></tr>${rows}</table></div>`}
       ${anyClaimable ? html`
       <form class="card" method="post" action="/claim">
-        <label for="to" class="muted">Wallet penerima (Robinhood Chain / EVM)</label>
+        <label for="to" class="muted">Receiving wallet (Robinhood Chain / EVM)</label>
         <p><input id="to" type="text" name="to" placeholder="0x…" required pattern="0x[0-9a-fA-F]{40}" autocomplete="off"></p>
         <input type="hidden" name="csrf" value="${csrfFor(s.uid)}">
-        <button class="btn" type="submit">Claim sekarang</button>
-        <p class="muted">Pastikan alamatnya benar — transfer on-chain tidak bisa dibatalkan.</p>
+        <button class="btn" type="submit">Claim now</button>
+        <p class="muted">Double-check the address — on-chain transfers cannot be reversed.</p>
       </form>` : raw("")}
     `));
   });
@@ -236,15 +236,15 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     const s = await session(c);
     if (!s) return c.redirect("/claim");
     const form = await c.req.parseBody();
-    if (!csrfOk(s.uid, String(form.csrf ?? ""))) return c.text("Sesi tidak valid, muat ulang halaman.", 403);
+    if (!csrfOk(s.uid, String(form.csrf ?? ""))) return c.text("Session expired, please reload the page.", 403);
     const to = String(form.to ?? "").trim();
-    if (!isAddress(to) || to.toLowerCase() === zeroAddress) return redirectWithFlash(c, "Alamat wallet tidak valid.");
+    if (!isAddress(to) || to.toLowerCase() === zeroAddress) return redirectWithFlash(c, "That wallet address is not valid.");
 
     const results = await claimAll(db, long, s.uid, getAddress(to), cfg.chain.maxPayoutPerClaim);
     const parts = await Promise.all(results.map(async (r) =>
-      r.error ? `${await fmt(r.asset, r.amount)}: ${r.error.slice(0, 160)}` : `✅ ${await fmt(r.asset, r.amount)} terkirim (${r.txHash!.slice(0, 10)}…)`,
+      r.error ? `${await fmt(r.asset, r.amount)}: ${r.error.slice(0, 160)}` : `✅ ${await fmt(r.asset, r.amount)} sent (${r.txHash!.slice(0, 10)}…)`,
     ));
-    const msg = parts.length ? parts.join(" · ") : "Tidak ada yang bisa di-claim.";
+    const msg = parts.length ? parts.join(" · ") : "Nothing to claim.";
     return redirectWithFlash(c, msg);
   });
 

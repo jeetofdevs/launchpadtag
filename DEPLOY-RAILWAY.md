@@ -1,47 +1,47 @@
-# Deploy LONGSHOT ke Railway — Langkah demi Langkah
+# Deploying LONGSHOT on Railway — Step by Step
 
-Panduan ini dibagi 2 tahap:
+This guide has two stages:
 
-- **Tahap 1 — Mode uji coba (gratis, tanpa uang sungguhan).** Website LONGSHOT online, tapi token dan fee-nya masih pura-pura. Tujuannya memastikan server jalan.
-- **Tahap 2 — Mode sungguhan.** Bot membaca tweet asli dan membuat token asli di Robinhood Chain.
+- **Stage 1 — Test mode (no real money).** The LONGSHOT website goes online, but tokens and fees are simulated. The goal is to confirm the server runs.
+- **Stage 2 — Live mode.** The bot reads real tweets and launches real tokens on Robinhood Chain.
 
-Kerjakan Tahap 1 dulu sampai berhasil, baru lanjut ke Tahap 2.
+Finish Stage 1 before moving to Stage 2.
 
 ---
 
-## Tahap 1 — Online dalam mode uji coba
+## Stage 1 — Online in test mode
 
-### Langkah 1. Buat akun Railway
+### Step 1. Create a Railway account
 
-1. Buka **https://railway.com** lalu klik **Login**.
-2. Pilih **Login with GitHub** (pakai akun GitHub yang punya repo `launchpadtag`).
-3. Untuk server yang jalan 24 jam, pilih paket **Hobby** (sekitar $5/bulan) di menu **Account → Plans**.
+1. Go to **https://railway.com** and click **Login**.
+2. Choose **Login with GitHub**, using the account that owns this repository.
+3. For a server that runs 24/7, choose the **Hobby** plan (about $5/month) under **Account → Plans**.
 
-### Langkah 2. Buat project dari repo GitHub
+### Step 2. Create a project from the repository
 
-1. Di dashboard Railway, klik **New Project**.
-2. Pilih **Deploy from GitHub repo**.
-3. Kalau diminta, klik **Configure GitHub App** lalu izinkan Railway mengakses repo **`jeetofdevs/launchpadtag`**.
-4. Pilih repo **`launchpadtag`**.
-5. Railway otomatis membaca file `Dockerfile` dan `railway.json` di repo, jadi tidak perlu mengatur cara build.
+1. In the Railway dashboard, click **New Project**.
+2. Choose **Deploy from GitHub repo**.
+3. If asked, click **Configure GitHub App** and give Railway access to **this repository only**.
+4. Select the repository.
+5. Railway reads the `Dockerfile` and `railway.json` in the repository automatically; no build settings are needed.
 
-> Kalau Railway menanyakan branch, pilih **`claude/ide-launchpad-by-tag-9brxlq`**.
+> If Railway asks for a branch, pick the branch that contains LONGSHOT.
 
-Deploy pertama kemungkinan **gagal**. Itu normal, karena kita belum mengisi pengaturan (Langkah 4).
+The very first deploy may fail. That is expected until the Variables are set (Step 4).
 
-### Langkah 3. Tambahkan Volume (tempat menyimpan data)
+### Step 3. Add a Volume (persistent storage)
 
-Tanpa Volume, semua data (daftar token, catatan fee) **hilang setiap kali server restart**.
+Without a Volume, all data (launched tokens, fee records) is **lost on every restart**.
 
-1. Klik service **launchpadtag** di dalam project.
-2. Klik kanan area kosong di canvas project (atau tombol **+ Create**), lalu pilih **Volume**.
-3. Hubungkan volume ke service **launchpadtag**.
-4. Isi **Mount path** dengan: `/data`
+1. Open the project canvas.
+2. Click **+ Create** (or right-click the canvas) and choose **Volume**.
+3. Attach it to the LONGSHOT service.
+4. Set **Mount path** to: `/data`
 
-### Langkah 4. Isi pengaturan (Variables)
+### Step 4. Set the Variables
 
-1. Klik service **launchpadtag**, lalu buka tab **Variables**.
-2. Klik **Raw Editor**, lalu tempel ini:
+1. Click the LONGSHOT service and open the **Variables** tab.
+2. Click **Raw Editor** and paste:
 
 ```
 PORT=8787
@@ -49,74 +49,74 @@ CHAIN_MODE=mock
 X_ENABLED=false
 ALLOW_DEV_LOGIN=true
 DB_PATH=/data/longshot.db
-SESSION_SECRET=GANTI_DENGAN_TEKS_ACAK_PANJANG
+SESSION_SECRET=REPLACE_WITH_A_LONG_RANDOM_STRING
 ```
 
-3. Ganti `GANTI_DENGAN_TEKS_ACAK_PANJANG` dengan teks acak minimal 32 karakter. Contoh cara membuatnya: buka https://www.random.org/strings/ atau ketik asal huruf dan angka yang panjang. **Jangan dibagikan ke siapa pun.**
-4. Klik **Update Variables**. Railway akan deploy ulang otomatis.
+3. Replace `REPLACE_WITH_A_LONG_RANDOM_STRING` with at least 32 random letters and digits (for example from https://www.random.org/strings/). **Never share it.** If you leave `SESSION_SECRET` out, LONGSHOT generates one and stores it on the Volume.
+4. Click **Update Variables**. Railway redeploys automatically.
 
-### Langkah 5. Buat alamat website
+### Step 5. Create a public address
 
-1. Masih di service **launchpadtag**, buka tab **Settings**.
-2. Di bagian **Networking**, klik **Generate Domain**.
-3. Kalau ditanya port, isi **8787**.
-4. Kamu akan dapat alamat seperti `launchpadtag-production.up.railway.app`.
+1. In the LONGSHOT service, open the **Settings** tab.
+2. Under **Networking**, click **Generate Domain**.
+3. If asked for a port, enter **8787**.
+4. You get an address like `longshot-production.up.railway.app`.
 
-### Langkah 6. Cek apakah berhasil
+### Step 6. Check it works
 
-1. Buka `https://ALAMAT-KAMU.up.railway.app/healthz`. Kalau muncul `{"ok":true,...}`, **server sudah jalan**. 🎉
-2. Buka `https://ALAMAT-KAMU.up.railway.app/` untuk melihat website LONGSHOT.
-3. Kalau ada masalah, buka tab **Deployments**, klik deploy terakhir, lalu **View Logs**. Kirim isi log-nya ke Claude.
+1. Open `https://YOUR-ADDRESS.up.railway.app/healthz`. If you see `{"ok":true,...}`, **the server is running**. 🎉
+2. Open `https://YOUR-ADDRESS.up.railway.app/` to see the LONGSHOT website.
+3. If something is wrong, open **Deployments**, click the latest deploy, then **View Logs**. Lines starting with `FATAL:` explain exactly what to fix.
 
-✅ **Tahap 1 selesai.** Di mode ini belum ada tweet yang dibaca dan belum ada token asli.
+✅ **Stage 1 done.** In this mode no tweets are read and no real tokens are created.
 
 ---
 
-## Tahap 2 — Mode sungguhan
+## Stage 2 — Live mode
 
-⚠️ Mulai tahap ini, bot memakai **uang sungguhan**. Siapkan dulu 3 hal berikut.
+⚠️ From here on the bot uses **real money**. Prepare these first.
 
-### A. Wallet LONGSHOT Treasury
+### A. LONGSHOT Treasury wallet
 
-1. Di MetaMask, buat **akun baru** khusus untuk bot. Jangan pakai wallet pribadi.
-2. Tambahkan jaringan **Robinhood Chain**:
+1. In MetaMask, create a **new account** just for the bot. Never use a personal wallet.
+2. Add the **Robinhood Chain** network:
    - Network name: `Robinhood Chain`
    - RPC URL: `https://rpc.mainnet.chain.robinhood.com`
    - Chain ID: `4663`
    - Currency symbol: `ETH`
    - Block explorer: `https://robinhoodchain.blockscout.com`
-3. Kirim **sedikit ETH** ke wallet ini untuk biaya gas.
-4. Ambil private key-nya: MetaMask → titik tiga → **Account details → Show private key**.
-   - Private key hanya ditempel di Railway (langkah D). **Jangan pernah kirim ke chat, termasuk ke Claude.**
+3. Send a **small amount of ETH** to this wallet for gas.
+4. Export the private key: MetaMask → ⋮ → **Account details → Show private key**.
+   - Paste it **only** into Railway Variables (step D). **Never send it in any chat, email, or message.** If a key has ever been shared, treat that wallet as test-only.
 
-### B. Akun X untuk bot
+### B. X account for the bot
 
-1. Buat akun X baru untuk bot, misalnya `@longshotbot`.
-2. Login dengan akun itu di **https://developer.x.com**, lalu daftar developer.
-3. Pilih paket yang punya akses **search** (paket **Basic** atau lebih tinggi; paket gratis tidak cukup).
-4. Buat **Project** dan **App**, lalu catat:
+1. Create a new X account for the bot, e.g. `@longshotbot`.
+2. Sign in with it at **https://developer.x.com** and register as a developer.
+3. Choose a plan that includes **search** (Basic or higher; the free plan is not enough).
+4. Create a **Project** and an **App**, and note:
    - **Bearer Token**
-   - **API Key** dan **API Key Secret**
-   - **Access Token** dan **Access Token Secret**. Pastikan izinnya **Read and Write**, supaya bot bisa membalas tweet.
-5. Di pengaturan App, buka **User authentication settings** dan aktifkan **OAuth 2.0**:
+   - **API Key** and **API Key Secret**
+   - **Access Token** and **Access Token Secret** — permissions must be **Read and Write** so the bot can reply.
+5. In the App's **User authentication settings**, enable **OAuth 2.0**:
    - Type of App: **Web App**
-   - Callback URL: `https://ALAMAT-KAMU.up.railway.app/auth/x/callback`
-   - Website URL: `https://ALAMAT-KAMU.up.railway.app`
-   - Catat **Client ID** dan **Client Secret**.
+   - Callback URL: `https://YOUR-ADDRESS.up.railway.app/auth/x/callback`
+   - Website URL: `https://YOUR-ADDRESS.up.railway.app`
+   - Note the **Client ID** and **Client Secret**.
 
-### C. Izin dari tim Long.xyz (sangat disarankan)
+### C. Permission from Long.xyz (strongly recommended)
 
-DM **@longdotxyz**. Tanyakan apakah mereka mengizinkan bot LONGSHOT, dan apakah token buatan bot bisa tampil di app.long.xyz.
+DM **@longdotxyz** and ask whether they are fine with the LONGSHOT bot and whether bot-launched tokens can be listed on app.long.xyz.
 
-### D. Ganti pengaturan di Railway
+### D. Switch Railway to live mode
 
-Buka tab **Variables** → **Raw Editor**, lalu ganti isinya dengan ini (isi bagian yang kosong):
+Open **Variables** → **Raw Editor** and replace the contents with (fill in the blanks):
 
 ```
 PORT=8787
 CHAIN_MODE=onchain
 DB_PATH=/data/longshot.db
-SESSION_SECRET=teks-acak-yang-sama-seperti-tahap-1
+SESSION_SECRET=same-random-string-as-stage-1
 
 TREASURY_PRIVATE_KEY=
 MAX_PAYOUT_PER_CLAIM=0
@@ -132,34 +132,35 @@ X_OAUTH_CLIENT_ID=
 X_OAUTH_CLIENT_SECRET=
 ```
 
-Hapus baris `ALLOW_DEV_LOGIN` kalau masih ada. Klik **Update Variables**.
+Remove `ALLOW_DEV_LOGIN` if it is still there. Click **Update Variables**.
 
-> **Pertama kali menyala di mode sungguhan**, bot membaca seluruh riwayat launch Long.xyz supaya tahu ticker mana saja yang sudah *reserved*. Proses ini bisa memakan beberapa menit. Di **View Logs** akan terlihat `ticker index: backfilling…` lalu progresnya. Selama proses ini, tweet launch ditunda dulu (tidak hilang) dan diproses setelah selesai.
+> **First start in live mode:** the bot reads the full history of Long.xyz launches to learn which tickers are *reserved*. This can take a few minutes; the logs show `ticker index: backfilling…` and progress. Launch tweets are deferred (not lost) until it finishes.
 
-### E. Tes kecil sebelum diumumkan
+Check the logs for `LONGSHOT starting — chain=onchain, treasury=0x…`. The Treasury address must match your MetaMask wallet.
 
-1. Dari akun X **pribadi** kamu, tweet: `@longdotxyz launch $TESTLS "Test Longshot" paired $NVDA`
-2. Tunggu sekitar 1 menit. Bot seharusnya membalas tweet itu dengan alamat token (CA).
-3. Beli token itu sedikit supaya ada fee.
-4. Tunggu sekitar 15 menit (bot meng-klaim fee secara berkala).
-5. Buka `https://ALAMAT-KAMU.up.railway.app/claim`, login dengan X, masukkan wallet pribadi, lalu klik **Claim**.
-6. Cek wallet pribadi kamu: 80% fee harus masuk.
+### E. Small test before announcing
 
-Kalau semua berhasil, LONGSHOT siap diumumkan. 🚀
+1. From your **personal** X account, tweet: `@longdotxyz launch $TESTLS "Test Longshot" paired $NVDA`
+2. Within about a minute the bot should reply with the contract address.
+3. Buy a small amount of the token so it earns fees.
+4. Wait about 15 minutes (fees are collected periodically).
+5. Open `https://YOUR-ADDRESS.up.railway.app/claim`, sign in with X, enter your personal wallet, and click **Claim now**.
+6. Check your personal wallet: 80% of the fees should arrive.
+7. Tweet `@longdotxyz launch $SI` — the bot should reply `❌ $SI reserved. Try again using another ticker.`
+
+If all of this works, LONGSHOT is ready to announce. 🚀
 
 ---
 
-## Kalau ada masalah
+## Troubleshooting
 
-| Gejala | Kemungkinan penyebab |
+| Symptom | Likely cause |
 |---|---|
-| `/healthz` tidak bisa dibuka | Domain belum dibuat (Langkah 5), atau deploy gagal. Cek **View Logs**. |
-| Log: `Set SESSION_SECRET` | Variable `SESSION_SECRET` belum diisi. |
-| Data hilang setelah restart | Volume belum dipasang di `/data` (Langkah 3). |
-| Bot tidak membalas tweet | `X_ENABLED` bukan `true`, paket X API tidak punya akses search, atau izin App bukan *Read and Write*. |
-| Log: `TREASURY_PRIVATE_KEY is missing/invalid` | Private key belum diisi atau salah copy (harus 64 karakter, boleh diawali `0x` atau tidak). |
-| Bot membalas `reserved` | Ticker sudah pernah di-launch (di LONGSHOT atau di app.long.xyz), atau sama dengan simbol saham Robinhood. User harus memilih ticker lain. |
-| Log: `ticker-sync error` terus-menerus | RPC Robinhood Chain sedang bermasalah. Launch ditunda sampai pengecekan ticker berhasil lagi. |
-| Log: `RECONCILE:` | Ada transaksi yang terkirim tapi belum terkonfirmasi. Saldo user dikunci supaya aman. Kirim log-nya ke Claude untuk dicek. |
-
-Kirim isi **View Logs** ke Claude kapan saja kalau bingung.
+| Deploy shows **Crashed** | Open **View Logs** and look for a line starting with `FATAL:` — it names the setting to fix. |
+| `/healthz` does not load | No domain yet (Step 5), or the deploy failed — check the logs. |
+| `FATAL: TREASURY_PRIVATE_KEY is missing/invalid` | Key missing or mis-copied (64 hex characters, with or without `0x`). |
+| Data disappears after a restart | The Volume is not mounted at `/data` (Step 3). |
+| Bot does not reply to tweets | `X_ENABLED` is not `true`, the X plan lacks search access, or the App is not *Read and Write*. |
+| Bot replies `reserved` | The ticker was already launched (via LONGSHOT or on app.long.xyz) or is a Robinhood stock symbol. |
+| Repeated `ticker-sync error` | The Robinhood Chain RPC is having trouble; launches wait until ticker checks succeed again. |
+| `RECONCILE:` in the logs | A transaction was sent but not confirmed. The user's balance stays locked so it can't be paid twice; verify the transaction on the explorer. |

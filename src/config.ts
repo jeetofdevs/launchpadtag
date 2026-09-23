@@ -45,7 +45,8 @@ export function loadConfig() {
     /** "Login as test user" on /claim. Only ever allowed in mock mode. */
     allowDevLogin: process.env.ALLOW_DEV_LOGIN === "true" || (!process.env.RAILWAY_ENVIRONMENT && process.env.NODE_ENV !== "production"),
     port: int("PORT", 8787),
-    sessionSecret: env("SESSION_SECRET", "dev-only-change-me"),
+    /** Signs login cookies. If unset, one is generated and stored in the database on first boot. */
+    sessionSecret: process.env.SESSION_SECRET?.trim() ?? "",
 
     x: {
       enabled: process.env.X_ENABLED === "true",
