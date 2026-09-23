@@ -151,28 +151,67 @@ export class OnchainLongClient implements LongClient {
    */
   longTemplate(): Promise<LongTemplate> {
     this.template ??= (async () => {
-      const hash = this.cfg.longTemplateTx;
-      const [tx, receipt] = await Promise.all([
-        this.pub.getTransaction({ hash }),
-        this.pub.getTransactionReceipt({ hash }),
-      ]);
-      if (tx.to?.toLowerCase() !== this.cfg.longLauncher.toLowerCase()) throw new Error(`LONG_TEMPLATE_TX ${hash} is not a call to Long.xyz's launcher ${this.cfg.longLauncher}`);
-      if (receipt.status !== "success") throw new Error(`LONG_TEMPLATE_TX ${hash} did not succeed`);
-      const args = decodeCreate(tx.input);
-      const launched = receipt.logs.find((l) => l.address.toLowerCase() === this.cfg.longLauncher.toLowerCase() && l.topics[0]?.toLowerCase() === LAUNCH_CREATED_TOPIC);
-      const asset = launched?.topics[2] ? (`0x${launched.topics[2].slice(-40)}` as Address) : undefined;
-      if (!asset) throw new Error(`LONG_TEMPLATE_TX ${hash} has no LaunchCreated event`);
-      if (predictTokenAddress(args.tokenFactory, args.salt, this.cfg.longInitCodeHash).toLowerCase() !== asset.toLowerCase())
-        throw new Error("LONG_INITCODE_HASH does not reproduce the template's token address — can't make canonical Long.xyz tokens");
-      if (!asset.toLowerCase().endsWith(CANONICAL_SUFFIX)) throw new Error(`template token ${asset} is not a canonical Long.xyz token (…${CANONICAL_SUFFIX})`);
-      const t = templateFromReference(args, this.cfg.longInitCodeHash);
-      const protocolBps = (t.protocolShares * BPS) / WAD;
-      if (protocolBps !== this.cfg.protocolShareBps)
-        throw new Error(`Long.xyz takes ${protocolBps} bps of fees but PROTOCOL_SHARE_BPS is ${this.cfg.protocolShareBps}; set PROTOCOL_SHARE_BPS=${protocolBps}`);
-      return t;
+      const tried: string[] = [];
+      try {
+        return await this.templateFrom(this.cfg.longTemplateTx);
+      } catch (e) {
+        tried.push(`${this.cfg.longTemplateTx.slice(0, 10)}…: ${e instanceof Error ? e.message : e}`);
+      }
+      // Fall back to the most recent app.long.xyz launches found on-chain.
+      for (const hash of await this.recentLaunchTxs(10)) {
+        try {
+          return await this.templateFrom(hash);
+        } catch (e) {
+          tried.push(`${hash.slice(0, 10)}…: ${e instanceof Error ? e.message : e}`);
+        }
+      }
+      throw new Error(`no usable Long.xyz launch found to copy. Tried: ${tried.join(" | ")}`);
     })();
     this.template.catch(() => (this.template = null)); // retry on the next launch
     return this.template;
+  }
+
+  /** Transaction the verified template was taken from (for logs). */
+  templateTx: Hex | null = null;
+
+  /** Newest transactions that emitted LaunchCreated on Long.xyz's launcher (searches back ~2M blocks). */
+  private async recentLaunchTxs(max: number): Promise<Hex[]> {
+    const head = await this.pub.getBlockNumber();
+    const out: Hex[] = [];
+    for (let to = head; to > 0n && head - to < 2_000_000n && out.length < max; to -= 10_000n) {
+      const from = to > 9_999n ? to - 9_999n : 0n;
+      const logs = (await this.pub.request({
+        method: "eth_getLogs",
+        params: [{ address: this.cfg.longLauncher, fromBlock: `0x${from.toString(16)}`, toBlock: `0x${to.toString(16)}`, topics: [LAUNCH_CREATED_TOPIC] }],
+      } as never)) as { transactionHash: Hex }[];
+      for (const l of logs.reverse()) if (!out.includes(l.transactionHash)) out.push(l.transactionHash);
+    }
+    return out.slice(0, max);
+  }
+
+  /**
+   * Verify one launch and turn it into a template. It must be a successful create() sent straight to
+   * Long.xyz's launcher, its token address must be reproducible from its salt and end in 1e18, and its
+   * protocol cut must match PROTOCOL_SHARE_BPS.
+   */
+  private async templateFrom(hash: Hex): Promise<LongTemplate> {
+    const [tx, receipt] = await Promise.all([this.pub.getTransaction({ hash }), this.pub.getTransactionReceipt({ hash })]);
+    if (tx.to?.toLowerCase() !== this.cfg.longLauncher.toLowerCase())
+      throw new Error(`sent to ${tx.to} (function ${tx.input.slice(0, 10)}), not to Long.xyz's launcher`);
+    if (receipt.status !== "success") throw new Error("transaction failed");
+    const args = decodeCreate(tx.input);
+    const launched = receipt.logs.find((l) => l.address.toLowerCase() === this.cfg.longLauncher.toLowerCase() && l.topics[0]?.toLowerCase() === LAUNCH_CREATED_TOPIC);
+    const asset = launched?.topics[2] ? (`0x${launched.topics[2].slice(-40)}` as Address) : undefined;
+    if (!asset) throw new Error("no LaunchCreated event");
+    if (predictTokenAddress(args.tokenFactory, args.salt, this.cfg.longInitCodeHash).toLowerCase() !== asset.toLowerCase())
+      throw new Error("LONG_INITCODE_HASH does not reproduce its token address");
+    if (!asset.toLowerCase().endsWith(CANONICAL_SUFFIX)) throw new Error(`token ${asset} is not canonical (…${CANONICAL_SUFFIX})`);
+    const t = templateFromReference(args, this.cfg.longInitCodeHash);
+    const protocolBps = (t.protocolShares * BPS) / WAD;
+    if (protocolBps !== this.cfg.protocolShareBps)
+      throw new Error(`Long.xyz takes ${protocolBps} bps but PROTOCOL_SHARE_BPS is ${this.cfg.protocolShareBps}; set PROTOCOL_SHARE_BPS=${protocolBps}`);
+    this.templateTx = hash;
+    return t;
   }
 
   /** Native ETH the Treasury holds for gas, formatted. */
