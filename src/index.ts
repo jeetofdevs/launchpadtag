@@ -35,6 +35,14 @@ function fatal(e: unknown): void {
         ),
   });
 }
+// Railway sends SIGTERM to the old container when a new deploy takes over. Exit cleanly (code 0) so it
+// isn't reported as a failure. Progress (ticker index, ledger) is already saved in the database.
+for (const sig of ["SIGTERM", "SIGINT"] as const) {
+  process.on(sig, () => {
+    console.log(`[${new Date().toISOString()}] ${sig} received — a newer deploy is taking over; shutting down cleanly.`);
+    process.exit(0);
+  });
+}
 process.on("unhandledRejection", (e) => log(`unhandled rejection: ${e instanceof Error ? e.stack : e}`));
 
 let cfg!: ReturnType<typeof loadConfig>;
