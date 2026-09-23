@@ -83,3 +83,20 @@ test("X errors are explained without leaking keys", async () => {
   assert.match(msg, /^X 401: Unauthorized/);
   assert.match(msg, /regenerate the Access Token AFTER the Consumer Key/);
 });
+
+test("swapped X_ACCESS_TOKEN / X_ACCESS_SECRET are detected and fixed", async () => {
+  const { loadConfig } = await import("../src/config.ts");
+  const saved = { ...process.env };
+  try {
+    process.env.X_ACCESS_TOKEN = "5OZr4OT1nZGGVerZg0AjlFnKeoI2UWEfpvxDUrrcFqk6q";
+    process.env.X_ACCESS_SECRET = "2102813850382807040-NLpQqwjKiXDZw3v01ZVkns2BbXjjwF";
+    const x = loadConfig().x;
+    assert.equal(x.accessSwapped, true);
+    assert.match(x.accessToken, /^2102813850382807040-/);
+    process.env.X_ACCESS_TOKEN = "2102813850382807040-abc";
+    process.env.X_ACCESS_SECRET = "secretsecret";
+    assert.equal(loadConfig().x.accessSwapped, false);
+  } finally {
+    process.env = saved;
+  }
+});

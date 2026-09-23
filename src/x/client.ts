@@ -33,11 +33,26 @@ export function describeXError(e: unknown): string {
 /** Posts replies from the LONGSHOT bot account (OAuth 1.0a user context). */
 export class XReplier implements Replier {
   private readonly client: TwitterApi;
-  constructor(x: Config["x"]) {
+  constructor(private readonly x: Config["x"]) {
     this.client = new TwitterApi({
       appKey: x.appKey, appSecret: x.appSecret, accessToken: x.accessToken, accessSecret: x.accessSecret,
     });
   }
+  /**
+   * Narrow a 401 down to one pair of keys: the Consumer Key/Secret alone can fetch an app token,
+   * so if that works the Access Token/Secret is the wrong pair.
+   */
+  async diagnose(): Promise<string> {
+    const shape = /^\d+-[A-Za-z0-9]+$/;
+    if (!shape.test(this.x.accessToken)) return "X_ACCESS_TOKEN doesn't look like an Access Token (it should start with your account's number and a dash, e.g. 2102813850…-…).";
+    try {
+      await new TwitterApi({ appKey: this.x.appKey, appSecret: this.x.appSecret }).appLogin();
+    } catch {
+      return "X_APP_KEY / X_APP_SECRET are wrong: regenerate the Consumer Key and paste both, then regenerate the Access Token.";
+    }
+    return "X_APP_KEY / X_APP_SECRET are fine, so X_ACCESS_TOKEN / X_ACCESS_SECRET are the wrong pair: regenerate the Access Token (after the Consumer Key) and paste both.";
+  }
+
   /** Which account these keys post as. Logged at startup so wrong or read-only keys show up immediately. */
   async whoami(): Promise<string> {
     const me = await this.client.v2.me();

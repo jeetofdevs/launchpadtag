@@ -62,6 +62,9 @@ export function dbIsEphemeral(dbPath: string): boolean {
   return !mount || !dbPath.startsWith(`${mount}/`);
 }
 
+/** X access tokens look like "<numeric user id>-<letters>"; the secret never has that shape. */
+const ACCESS_TOKEN_SHAPE = /^\d+-[A-Za-z0-9]+$/;
+
 export function loadConfig() {
   // Hosts like Railway keep variables that were pasted with an empty value. Treat those as unset
   // so every setting falls back to its default instead of becoming "" / NaN.
@@ -74,6 +77,12 @@ export function loadConfig() {
   const stockTokens = Object.fromEntries(
     Object.entries(CATALOG).map(([s, t]) => [s, (process.env[`STOCK_TOKEN_${s}`] || t.address) as Address]),
   ) as Record<Stock, Address>;
+
+  // A common paste mistake: token and secret the wrong way round. Recognisable by shape, so fix it.
+  let accessToken = key("X_ACCESS_TOKEN");
+  let accessSecret = key("X_ACCESS_SECRET");
+  const accessSwapped = !ACCESS_TOKEN_SHAPE.test(accessToken) && ACCESS_TOKEN_SHAPE.test(accessSecret);
+  if (accessSwapped) [accessToken, accessSecret] = [accessSecret, accessToken];
 
   return {
     dbPath: resolveDbPath(),
@@ -96,8 +105,10 @@ export function loadConfig() {
       triggerHandle: env("TRIGGER_HANDLE", process.env.BOT_HANDLE ?? "longshotpadxyz").replace(/^@/, ""),
       appKey: key("X_APP_KEY"),
       appSecret: key("X_APP_SECRET"),
-      accessToken: key("X_ACCESS_TOKEN"),
-      accessSecret: key("X_ACCESS_SECRET"),
+      accessToken,
+      /** True when X_ACCESS_TOKEN and X_ACCESS_SECRET were pasted the wrong way round (fixed automatically). */
+      accessSwapped,
+      accessSecret,
       bearerToken: key("X_BEARER_TOKEN"),
       oauthClientId: (process.env.X_OAUTH_CLIENT_ID ?? "").trim(),
       oauthClientSecret: (process.env.X_OAUTH_CLIENT_SECRET ?? "").trim(),

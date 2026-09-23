@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { serve } from "@hono/node-server";
+import { ApiResponseError } from "twitter-api-v2";
 import { handleMention, type Replier } from "./bot.ts";
 import { createLongClient } from "./chain/index.ts";
 import { OnchainLongClient } from "./chain/onchain.ts";
@@ -126,9 +127,11 @@ if (cfg.x.enabled) {
       xReady = true;
       log(`X bot: replies will be posted as @${u}; listening for @${cfg.x.triggerHandle} every ${cfg.x.pollIntervalMs / 1000}s`);
     } catch (e) {
-      log(`X bot: key check failed — ${describeXError(e)} Launches are paused until this is fixed; tweets will be handled afterwards.`);
+      const why = e instanceof ApiResponseError && e.code === 401 ? ` Diagnosis: ${await xReplier.diagnose()}` : "";
+      log(`X bot: key check failed — ${describeXError(e)}${why} Launches are paused until this is fixed; tweets will be handled afterwards.`);
     }
   };
+  if (cfg.x.accessSwapped) log("X bot: X_ACCESS_TOKEN and X_ACCESS_SECRET were swapped in the Variables — using them the right way round.");
   void checkKeys();
   every(cfg.x.pollIntervalMs, "mentions", async () => {
     if (!xReady) {
