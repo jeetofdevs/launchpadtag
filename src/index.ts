@@ -61,7 +61,16 @@ if (tickers) every(cfg.chain.tickerSyncIntervalMs, "ticker-sync", () => tickers.
 
 if (cfg.x.enabled) {
   const source = new XMentionSource(cfg.x, db);
-  const replier: Replier = new XReplier(cfg.x);
+  const xReplier = new XReplier(cfg.x);
+  const replier: Replier = xReplier;
+  const missing = ["X_BEARER_TOKEN", "X_APP_KEY", "X_APP_SECRET", "X_ACCESS_TOKEN", "X_ACCESS_SECRET"].filter((k) => !process.env[k]);
+  if (missing.length) log(`X bot: missing ${missing.join(", ")} — the bot can't read or reply until these are set.`);
+  xReplier.whoami().then(
+    (u) => log(u.toLowerCase() === cfg.x.botHandle.toLowerCase()
+      ? `X bot: replies will be posted as @${u}; listening for @${cfg.x.triggerHandle} every ${cfg.x.pollIntervalMs / 1000}s`
+      : `X bot WARNING: the access token belongs to @${u}, not @${cfg.x.botHandle}. Regenerate X_ACCESS_TOKEN/X_ACCESS_SECRET while logged in as @${cfg.x.botHandle}.`),
+    (e) => log(`X bot: key check failed (${e instanceof Error ? e.message : e}) — check X_APP_KEY/SECRET and X_ACCESS_TOKEN/SECRET.`),
+  );
   every(cfg.x.pollIntervalMs, "mentions", async () => {
     const { mentions, newestId } = await source.fetchNew();
     if (!mentions.length) return;

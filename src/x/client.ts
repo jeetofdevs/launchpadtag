@@ -19,6 +19,11 @@ export class XReplier implements Replier {
       appKey: x.appKey, appSecret: x.appSecret, accessToken: x.accessToken, accessSecret: x.accessSecret,
     });
   }
+  /** Which account these keys post as. Logged at startup so wrong or read-only keys show up immediately. */
+  async whoami(): Promise<string> {
+    const me = await this.client.v2.me();
+    return me.data.username;
+  }
   async reply(toTweetId: string, text: string) {
     await this.client.v2.reply(text.slice(0, 280), toTweetId);
   }
