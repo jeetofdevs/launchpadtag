@@ -67,7 +67,9 @@ export async function handleMention(deps: BotDeps, m: Mention, now = Date.now())
   const recipient = wantsOther ? m.mentioned?.find((u) => u.username.toLowerCase() === cmd.feesTo!.toLowerCase()) : undefined;
   const feeReject = !wantsOther
     ? undefined
-    : own.includes(cmd.feesTo!.toLowerCase())
+    : !cfg.rules.sendFeesEnabled
+      ? `sending fees to another account is coming soon. Tweet again without "fees @${cmd.feesTo}"`
+      : own.includes(cmd.feesTo!.toLowerCase())
       ? `fees can't be sent to @${cmd.feesTo}`
       : !recipient
         ? `couldn't find the X account @${cmd.feesTo} to send fees to`

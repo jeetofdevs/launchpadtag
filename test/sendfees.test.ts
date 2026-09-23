@@ -19,8 +19,19 @@ test("parser reads `fees @user` in any position after the command", () => {
   assert.equal(p("@longshotpadxyz launch $GIFT coffees @bob")?.feesTo, undefined);
 });
 
+test("send fees is coming soon: off by default, the tweet gets a reply and nothing launches", async () => {
+  const d = setup();
+  assert.equal(d.cfg.rules.sendFeesEnabled, false);
+  const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $SOON1 fees @bob_1", author: author({ id: "5" }), mentioned: [bob] });
+  assert.equal(r.kind, "rejected");
+  assert.match(d.replier.sent[0].text, /coming soon/);
+  const faq = await (await createApp({ ...d.cfg, sessionSecret: "x".repeat(32) }, d.db, d.long).request("http://x/")).text();
+  assert.match(faq, /Can I send the fees to someone else\?<\/summary><p><b>Coming soon\.<\/b>/);
+});
+
 test("send fees: the recipient is credited and can claim; the reply says so", async () => {
   const d = setup(1_000_000n);
+  d.cfg.rules.sendFeesEnabled = true;
   d.cfg.sessionSecret = "x".repeat(32);
   const tweetId = nextTweetId();
   const res = await handleMention(d, { tweetId, text: "@longshotpadxyz launch $GIFT paired $NVDA fees @bob_1", author: author({ id: "1", username: "alice" }), mentioned: [bob] });
@@ -39,6 +50,7 @@ test("send fees: the recipient is credited and can claim; the reply says so", as
 
 test("send fees: unknown account or the bot itself is rejected; yourself is a normal launch", async () => {
   const d = setup();
+  d.cfg.rules.sendFeesEnabled = true;
   const missing = await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $NOPE1 fees @ghost", author: author({ id: "2" }), mentioned: [] });
   assert.equal(missing.kind, "rejected");
   assert.match(d.replier.sent.at(-1)!.text, /couldn't find the X account @ghost/);

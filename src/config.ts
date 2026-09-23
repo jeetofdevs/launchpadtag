@@ -81,6 +81,8 @@ export function loadConfig() {
        * 0 (default) = reserved forever, matching what app.long.xyz shows for already-deployed tickers.
        */
       tickerCooldownHours: int("TICKER_COOLDOWN_HOURS", 0),
+      /** "Send fees" (`fees @user` in the launch tweet). Coming soon — off unless SEND_FEES_ENABLED=true. */
+      sendFeesEnabled: process.env.SEND_FEES_ENABLED === "true",
     },
 
     chain: {
