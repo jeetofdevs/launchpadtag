@@ -1,0 +1,90 @@
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
+import { DatabaseSync } from "node:sqlite";
+
+export type DB = DatabaseSync;
+
+const SCHEMA = `
+CREATE TABLE IF NOT EXISTS launches (
+  tweet_id      TEXT PRIMARY KEY,
+  x_user_id     TEXT NOT NULL,
+  x_username    TEXT NOT NULL,
+  ticker        TEXT NOT NULL,
+  name          TEXT NOT NULL,
+  stock         TEXT NOT NULL,
+  image_url     TEXT,
+  origin_tweet  TEXT,
+  status        TEXT NOT NULL,          -- queued | deploying | live | rejected | failed
+  reason        TEXT,
+  token_address TEXT,
+  tx_hash       TEXT,
+  created_at    INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS launches_user ON launches(x_user_id, created_at);
+CREATE INDEX IF NOT EXISTS launches_ticker ON launches(ticker, created_at);
+
+-- Every creator-fee claim the Treasury makes from Long.xyz, per token.
+CREATE TABLE IF NOT EXISTS fees (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  token_address TEXT NOT NULL,
+  x_user_id     TEXT NOT NULL,
+  asset         TEXT NOT NULL,          -- ERC-20 the fee is paid in
+  amount        TEXT NOT NULL,          -- base units (bigint as string)
+  deployer_share TEXT NOT NULL,         -- 80% of amount
+  treasury_share TEXT NOT NULL,         -- 20% of amount
+  tx_hash       TEXT NOT NULL,
+  created_at    INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS fees_user ON fees(x_user_id, asset);
+
+-- Payouts from the Treasury to deployers.
+CREATE TABLE IF NOT EXISTS payouts (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  x_user_id     TEXT NOT NULL,
+  asset         TEXT NOT NULL,
+  amount        TEXT NOT NULL,
+  to_address    TEXT NOT NULL,
+  status        TEXT NOT NULL,          -- pending | sent | failed
+  tx_hash       TEXT,
+  error         TEXT,
+  created_at    INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS payouts_user ON payouts(x_user_id, asset);
+
+CREATE TABLE IF NOT EXISTS kv (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+`;
+
+export function openDb(path: string): DB {
+  if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
+  const db = new DatabaseSync(path);
+  db.exec("PRAGMA journal_mode = WAL;");
+  db.exec(SCHEMA);
+  return db;
+}
+
+export function tx<T>(db: DB, fn: () => T): T {
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    const out = fn();
+    db.exec("COMMIT");
+    return out;
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+}
+
+export function getKv(db: DB, key: string): string | undefined {
+  const row = db.prepare("SELECT value FROM kv WHERE key = ?").get(key) as { value: string } | undefined;
+  return row?.value;
+}
+
+export function setKv(db: DB, key: string, value: string) {
+  db.prepare("INSERT INTO kv(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(
+    key,
+    value,
+  );
+}

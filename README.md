@@ -1,7 +1,9 @@
-# TAGLONG — Launch Token Cukup dengan Tag @longdotxyz
+# LONGSHOT — Launch Token Cukup dengan Tag @longdotxyz
 
-> **"Tag it. Long it."**
+> **"One tweet. One token."**
 > Launch token di [Long.xyz](https://app.longxyz.com/) langsung dari X (Twitter), cukup dengan satu tweet yang men-tag **@longdotxyz**. Tanpa buka web, tanpa connect wallet dulu.
+
+> 🚀 **Mau langsung coba?** Lompat ke [Menjalankan LONGSHOT](#9-menjalankan-longshot).
 
 ---
 
@@ -9,13 +11,13 @@
 
 Long.xyz adalah launchpad permissionless di Robinhood Chain di mana setiap token yang di-launch dipasangkan (paired) dengan **Robinhood Stock Token** (NVDA, AAPL, MSFT, GOOGL, TSLA, MU, SPCX) dan diluncurkan lewat *fair auction* tanpa sniper.
 
-**TAGLONG** menambahkan satu jalur baru: **launch by tag**. User cukup nge-tweet:
+**LONGSHOT** menambahkan satu jalur baru: **launch by tag**. User cukup nge-tweet:
 
 ```
 @longdotxyz launch $MOON "Moon Nvidia" paired $NVDA
 ```
 
-Bot TAGLONG membaca tweet tersebut, membuat token-nya lewat kontrak Long.xyz, lalu membalas tweet itu dengan link token, contract address, dan link auction.
+Bot LONGSHOT membaca tweet tersebut, membuat token-nya lewat kontrak Long.xyz, lalu membalas tweet itu dengan link token, contract address, dan link auction.
 
 Kenapa ini menarik:
 - **Viral by default** — setiap launch otomatis jadi tweet publik + reply bot, jadi distribusi & marketing jalan dari detik pertama.
@@ -54,7 +56,7 @@ Kenapa ini menarik:
 ## 3. Alur (Flow)
 
 ```
- User tweet            TAGLONG Bot                 Long.xyz / Robinhood Chain
+ User tweet            LONGSHOT Bot                 Long.xyz / Robinhood Chain
  ──────────            ───────────                 ──────────────────────────
  "@longdotxyz  ──▶  1. Tangkap mention (X API)
   launch $X"        2. Parse perintah
@@ -77,30 +79,30 @@ Balasan bot contoh:
 📜 CA: 0x1234…abcd
 ⏱ Fair auction berjalan — no snipers
 🔗 app.longxyz.com/token/0x1234…abcd
-👤 Creator: @username — claim fee di taglong.xyz/claim
+👤 Creator: @username — claim fee di longshot.xyz/claim
 ```
 
 ---
 
 ## 4. Creator Fee & Claim
 
-### Wallet operator: **TAGLONG Treasury**
+### Wallet operator: **LONGSHOT Treasury**
 
-Semua deploy dan claim fee dijalankan dari satu wallet milik operator, disebut **TAGLONG Treasury**:
+Semua deploy dan claim fee dijalankan dari satu wallet milik operator, disebut **LONGSHOT Treasury**:
 
-1. **Deploy** — TAGLONG Treasury memanggil factory Long.xyz, jadi di on-chain yang tercatat sebagai creator token adalah TAGLONG Treasury.
-2. **Klaim dari Long.xyz** — bot secara berkala meng-claim creator fee semua token TAGLONG dari Long.xyz ke TAGLONG Treasury.
+1. **Deploy** — LONGSHOT Treasury memanggil factory Long.xyz, jadi di on-chain yang tercatat sebagai creator token adalah LONGSHOT Treasury.
+2. **Klaim dari Long.xyz** — bot secara berkala meng-claim creator fee semua token LONGSHOT dari Long.xyz ke LONGSHOT Treasury.
 3. **Pencatatan** — setiap fee yang masuk dicatat di DB per token → per **X user ID** deployer (bukan handle, supaya aman kalau ganti username).
-4. **Claim oleh user** — deployer buka `taglong.xyz/claim`, login X (OAuth), connect wallet, lalu TAGLONG Treasury mengirim **80%** dari fee token miliknya ke wallet tersebut. **20%** sisanya tetap di Treasury untuk operasional bot (gas deploy, gas claim, server, X API).
+4. **Claim oleh user** — deployer buka `longshot.xyz/claim`, login X (OAuth), connect wallet, lalu LONGSHOT Treasury mengirim **80%** dari fee token miliknya ke wallet tersebut. **20%** sisanya tetap di Treasury untuk operasional bot (gas deploy, gas claim, server, X API).
 
 ### Pembagian fee
 
 | Penerima | Porsi |
 |---|---|
 | Deployer (akun X yang nge-tag) | 80% |
-| TAGLONG Treasury (operasional bot/gas) | 20% |
+| LONGSHOT Treasury (operasional bot/gas) | 20% |
 
-> Pembagian ini berlaku untuk creator fee yang diterima TAGLONG Treasury dari Long.xyz. Fee protokol Long.xyz sendiri tetap mengikuti ketentuan Long.xyz.
+> Pembagian ini berlaku untuk creator fee yang diterima LONGSHOT Treasury dari Long.xyz. Fee protokol Long.xyz sendiri tetap mengikuti ketentuan Long.xyz.
 
 Contoh: token `$ROBO` menghasilkan 1.000 USDC creator fee → deployer claim **800 USDC**, **200 USDC** tetap di Treasury.
 
@@ -108,14 +110,14 @@ Contoh: token `$ROBO` menghasilkan 1.000 USDC creator fee → deployer claim **8
 
 Karena fee ditahan dulu di wallet operator, user perlu bisa memverifikasi bahwa 80% benar-benar dibayar:
 
-- Alamat TAGLONG Treasury dipublikasikan di bio bot dan di website.
-- Halaman publik `taglong.xyz/fees`: per token → total fee yang di-claim dari Long.xyz, jumlah yang sudah dibayar ke deployer, dan tx hash pembayarannya.
+- Alamat LONGSHOT Treasury dipublikasikan di bio bot dan di website.
+- Halaman publik `longshot.xyz/fees`: per token → total fee yang di-claim dari Long.xyz, jumlah yang sudah dibayar ke deployer, dan tx hash pembayarannya.
 - Halaman claim menampilkan rincian: total fee token, 80% bagian deployer, 20% operasional, dan yang sudah pernah di-claim.
 - **Roadmap:** pindahkan pembagian 80/20 ke smart contract splitter supaya pembayaran otomatis dan tidak perlu percaya ke operator.
 
 ### Keamanan wallet operator
 
-- Private key TAGLONG Treasury disimpan di KMS/HSM atau multisig, bukan di file `.env` server.
+- Private key LONGSHOT Treasury disimpan di KMS/HSM atau multisig, bukan di file `.env` server.
 - Pisahkan **hot wallet** (gas deploy & kirim claim, saldo kecil) dari **cold wallet** (akumulasi 20% operasional), dan sapu saldo berlebih dari hot ke cold secara berkala.
 - Batas maksimal per transaksi claim + alert kalau ada pengeluaran tidak wajar.
 
@@ -137,14 +139,14 @@ Karena fee ditahan dulu di wallet operator, user perlu bisa memverifikasi bahwa 
 
 | Komponen | Pilihan |
 |---|---|
-| Listener | X API v2 — filtered stream / polling mentions `@longdotxyz` (atau akun bot khusus, mis. `@taglongbot`, kalau akun resmi tidak tersedia) |
+| Listener | X API v2 — filtered stream / polling mentions `@longdotxyz` (atau akun bot khusus, mis. `@longshotbot`, kalau akun resmi tidak tersedia) |
 | Parser | Regex + validasi (lihat di bawah) |
 | Queue | Redis / BullMQ — supaya launch diproses berurutan & bisa retry |
 | Chain | Robinhood Chain — panggil kontrak factory Long.xyz (viem/ethers) |
 | Storage logo | IPFS (Pinata / web3.storage) |
 | DB | Postgres: `launches(tweet_id PK, x_user_id, ticker, name, stock, token_address, tx_hash, status)` |
 | Claim site | Next.js + X OAuth + wallet connect |
-| Wallet operator | TAGLONG Treasury — deploy token, claim fee dari Long.xyz, kirim 80% ke deployer |
+| Wallet operator | LONGSHOT Treasury — deploy token, claim fee dari Long.xyz, kirim 80% ke deployer |
 | Ledger fee | Postgres: `fees(token_address, x_user_id, amount_in, paid_out, tx_hash)` |
 
 Regex parser sederhana:
@@ -170,7 +172,7 @@ function parseTag(text: string) {
 
 1. **Fase 0 — Prototype:** bot jalan di testnet, whitelist 20 akun, reply manual-approve.
 2. **Fase 1 — Public beta:** launch by tag terbuka dengan rate limit ketat + halaman claim fee.
-3. **Fase 2 — Leaderboard:** `taglong.xyz/leaderboard` — creator & token terbaik dari tag, mingguan.
+3. **Fase 2 — Leaderboard:** `longshot.xyz/leaderboard` — creator & token terbaik dari tag, mingguan.
 4. **Fase 3 — Perintah lanjutan:**
    - `@longdotxyz buy $TICKER 10` — beli lewat wallet yang sudah di-bind.
    - `@longdotxyz info $TICKER` — bot balas harga, mcap, holder.
@@ -180,13 +182,50 @@ function parseTag(text: string) {
 
 ## 8. Nama & Branding
 
-- **Nama:** **TAGLONG**
-- **Tagline:** *"Tag it. Long it."*
-- **Alternatif nama:** `LongTag`, `Tag2Long`, `@Long It`
-- **Hashtag kampanye:** `#TagLong`
+- **Nama:** **LONGSHOT**
+- **Tagline:** *"One tweet. One token."*
+- **Hashtag kampanye:** `#LongShot`
 - **Contoh tweet peluncuran:**
-  > gak perlu buka web lagi. cukup tag @longdotxyz + $TICKER, token lu langsung live, paired ke saham beneran. **Tag it. Long it.** 🟢 #TagLong
+  > gak perlu buka web lagi. cukup tag @longdotxyz + $TICKER, token lu langsung live, paired ke saham beneran. **One tweet. One token.** 🟢 #LongShot
 
 ---
 
-> ⚠️ Catatan: Ini dokumen ide/konsep. Alamat kontrak, struktur fee, dan API integrasi Long.xyz perlu dikonfirmasi dengan tim @longdotxyz sebelum implementasi.
+## 9. Menjalankan LONGSHOT
+
+Butuh **Node.js ≥ 22.5** (pakai `node:sqlite` bawaan, tanpa database eksternal).
+
+```bash
+npm install
+cp .env.example .env
+npm run simulate   # simulasi penuh: tweet → launch → reply → harvest fee → claim 80%
+npm test           # parser, anti-spam, idempotensi, ledger 80/20, anti double-claim
+npm start          # bot + harvester + web di http://localhost:8787
+```
+
+Mode default `CHAIN_MODE=mock` memakai Long.xyz tiruan, jadi semuanya bisa dicoba tanpa wallet dan tanpa X API. Di mode mock tanpa OAuth, halaman `/claim` punya tombol *login dev*.
+
+### Struktur kode
+
+| File | Isi |
+|---|---|
+| `src/parser.ts` | Parse `@longdotxyz launch $TICKER "Nama" paired $STOCK` |
+| `src/validate.ts` | Anti-spam: umur akun, followers, rate limit, blacklist ticker, cooldown ticker |
+| `src/bot.ts` | Pipeline satu tweet: validasi → metadata → deploy → reply (idempotent per tweet ID) |
+| `src/x/client.ts` | X API: recent search untuk tag, reply dari akun bot |
+| `src/chain/onchain.ts` | Transaksi dari **LONGSHOT Treasury** (viem): deploy, claim fee, transfer ERC-20 |
+| `src/chain/mock.ts` | Long.xyz tiruan untuk dev/test |
+| `src/harvester.ts` | Claim creator fee semua token ke Treasury secara berkala, dibukukan 80/20 |
+| `src/ledger.ts` | Ledger fee & payout; reservasi atomik supaya tidak bisa double-claim |
+| `src/claim.ts` | Kirim 80% ke wallet deployer |
+| `src/web/server.ts` | Landing, `/claim` (login X OAuth2), `/fees` (transparansi), `/meta/:id.json` |
+
+### Menuju produksi (`CHAIN_MODE=onchain`)
+
+1. **ABI Long.xyz** — `src/chain/longAbi.ts` masih berisi signature **asumsi** (`createToken`, `claimCreatorFees`). Ganti dengan ABI & alamat factory asli dari tim @longdotxyz / explorer, lalu sesuaikan `OnchainLongClient`.
+2. **Aset fee** — diasumsikan creator fee dibayar dalam Stock Token pasangannya (`STOCK_TOKEN_*`). Sesuaikan `feeAsset()` kalau ternyata dalam ETH/aset lain.
+3. **Robinhood Chain** — isi `RPC_URL`, `CHAIN_ID`, `EXPLORER_URL`.
+4. **Treasury** — isi `TREASURY_PRIVATE_KEY` dengan hot wallet bersaldo kecil (idealnya dari KMS), set `MAX_PAYOUT_PER_CLAIM`, dan pantau log `RECONCILE:` (transaksi terkirim tapi belum terkonfirmasi — saldo dikunci sampai dicek manual).
+5. **X API** — plan dengan akses *recent search*, akun bot (mis. `@longshotbot`) untuk reply, dan OAuth 2.0 client untuk login di `/claim`. Set `X_ENABLED=true`.
+6. **Deploy** — satu proses Node (`npm start`) + volume persisten untuk `DB_PATH`. Pasang di belakang HTTPS dan set `SESSION_SECRET`.
+
+> ⚠️ Alamat kontrak, struktur fee, dan API Long.xyz perlu dikonfirmasi dengan tim @longdotxyz sebelum dipakai dengan dana sungguhan.
