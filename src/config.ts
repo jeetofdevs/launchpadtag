@@ -55,6 +55,8 @@ export function loadConfig() {
       enabled: process.env.X_ENABLED === "true",
       /** Handle users tag to launch (without @). */
       triggerHandle: env("TRIGGER_HANDLE", "longdotxyz"),
+      /** LONGSHOT's own X account (posts the replies), shown on the website. */
+      botHandle: env("BOT_HANDLE", "longshotpadxyz").replace(/^@/, ""),
       appKey: process.env.X_APP_KEY ?? "",
       appSecret: process.env.X_APP_SECRET ?? "",
       accessToken: process.env.X_ACCESS_TOKEN ?? "",

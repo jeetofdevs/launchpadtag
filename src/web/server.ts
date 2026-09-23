@@ -10,7 +10,7 @@ import type { Config } from "../config.ts";
 import type { DB } from "../db.ts";
 import { balances, feeReport, recentPayouts } from "../ledger.ts";
 import { buildMetadata } from "../metadata.ts";
-import { html, layout, raw } from "./html.ts";
+import { html, layout, raw, type Raw } from "./html.ts";
 import { TOKENOMICS, feeSplit, pct } from "../tokenomics.ts";
 
 interface Session {
@@ -61,6 +61,8 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     return c.redirect("/claim");
   }
 
+  const page = (title: string, body: Raw) => layout(title, body, cfg.x.botHandle);
+
   const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
   // Send www.<domain> to the canonical domain from PUBLIC_URL.
@@ -87,7 +89,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     const h = cfg.x.triggerHandle;
     const fee = feeSplit(cfg.chain);
     const shotUrl = `https://x.com/intent/post?text=${encodeURIComponent(`@${h} launch $TICKER "Token Name" paired $NVDA`)}`;
-    return c.html(layout("LONGSHOT", html`
+    return c.html(page("LONGSHOT", html`
       <section class="hero">
         <span class="tag">Take a shot on Long</span>
         <h1>One tweet.<br>One token.</h1>
@@ -172,7 +174,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       <td>${p.x_username ? `@${p.x_username}` : "—"}</td>
       <td class="num">${await fmt(p.asset, BigInt(p.amount))}</td>
       <td><a class="mono" href="${long.txUrl(p.tx_hash)}">${shortAddr(p.tx_hash)}</a></td></tr>`));
-    return c.html(layout("Fee transparency · LONGSHOT", html`
+    return c.html(page("Fee transparency · LONGSHOT", html`
       <span class="tag">Transparency</span>
       <h1>Where do the fees go?</h1>
       <p class="lead">All creator fees go to the LONGSHOT Treasury, and 80% is paid to the deployer on claim. Every number below can be checked on the explorer.</p>
@@ -231,7 +233,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
   app.get("/claim", async (c) => {
     const s = await session(c);
     if (!s) {
-      return c.html(layout("Claim fee · LONGSHOT", html`
+      return c.html(page("Claim fee · LONGSHOT", html`
         <span class="tag">Claim</span><h1>Claim your 80%</h1>
         <p class="lead">Sign in with the X account you tagged from. Fees are tracked by X account ID, so they stay yours even if you change your username.</p>
         <p><a class="btn" href="/auth/x">Sign in with X</a></p>
@@ -255,7 +257,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     const flash = await getSignedCookie(c, secret, FLASH);
     if (flash) deleteCookie(c, FLASH, { path: "/claim" });
 
-    return c.html(layout("Claim fee · LONGSHOT", html`
+    return c.html(page("Claim fee · LONGSHOT", html`
       <div class="row" style="justify-content:space-between"><span class="tag">Claim · @${s.username}</span><a class="muted" href="/logout">Sign out</a></div>
       <h1>Your fees</h1>
       ${flash ? html`<div class="card">${flash}</div>` : raw("")}

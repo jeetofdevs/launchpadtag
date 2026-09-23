@@ -72,15 +72,18 @@ h3{font-size:16px;margin:24px 0 10px}
 .legend{list-style:none;padding:0;margin:0 0 12px}
 .legend li{margin:8px 0;padding-left:18px;position:relative}
 .dot{position:absolute;left:0;top:.45em;width:10px;height:10px;border-radius:3px}
+@media (max-width:480px){.hide-sm{display:none}nav a{margin-left:12px;font-size:13px}.logo{letter-spacing:.04em}}
+code{overflow-wrap:anywhere}
 footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;padding:20px 0}
 `;
 
-export function layout(title: string, body: Raw): string {
+export function layout(title: string, body: Raw, botHandle = "longshotpadxyz"): string {
+  const x = `https://x.com/${encodeURIComponent(botHandle)}`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title><style>${CSS}</style></head><body>
 <header><div class="wrap"><a class="logo" href="/">LONG<span>SHOT</span></a>
-<nav><a href="/fees">Transparency</a><a href="/claim">Claim</a></nav></div></header>
+<nav><a href="/fees">Transparency</a><a href="/claim">Claim</a><a href="${x}" target="_blank" rel="noopener" aria-label="LONGSHOT on X">𝕏<span class="hide-sm"> @${esc(botHandle)}</span></a></nav></div></header>
 <main><div class="wrap">${body.html}</div></main>
-<footer><div class="wrap">LONGSHOT is an independent bot that launches tokens on Long.xyz on behalf of the person who tags it. Deployers receive 80% of creator fees; 20% covers bot operations. LONGSHOT never DMs first and will never ask for your seed phrase.</div></footer>
+<footer><div class="wrap">LONGSHOT is an independent bot that launches tokens on Long.xyz on behalf of the person who tags it. Deployers receive 80% of creator fees; 20% covers bot operations. LONGSHOT never DMs first and will never ask for your seed phrase. Official account: <a href="${x}" target="_blank" rel="noopener">@${esc(botHandle)}</a> — anyone else is an impersonator.</div></footer>
 </body></html>`;
 }

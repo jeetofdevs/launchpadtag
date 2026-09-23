@@ -60,7 +60,7 @@ Success:
 📈 Paired: $TSLA
 📜 CA: 0x1234…abcd
 🔗 https://app.long.xyz/tokens/0x1234…abcd
-💰 80% of creator fees go to @username — claim: https://takealongshot.xyz/claim
+💰 80% of creator fees go to @username — claim: https://longshotpad.xyz/claim
 ```
 
 Ticker taken:
@@ -209,6 +209,8 @@ Long.xyz runs on the **Doppler Protocol** on **Robinhood Chain (chain ID 4663)**
 ## 8. Branding
 
 - **Name:** LONGSHOT
+- **Website:** https://longshotpad.xyz
+- **X:** [@longshotpadxyz](https://x.com/longshotpadxyz)
 - **Tagline:** "Take a shot on Long." / "One tweet. One token."
 - **Hashtag:** `#LongShot`
 - **Launch tweet:** "No website needed. Tag @longdotxyz with a $TICKER and your token goes live, paired with a real stock. One tweet. One token. 🟢 #LongShot"
