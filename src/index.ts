@@ -4,7 +4,7 @@ import { handleMention, type Replier } from "./bot.ts";
 import { createLongClient } from "./chain/index.ts";
 import { OnchainLongClient } from "./chain/onchain.ts";
 import { LongTickerIndexer } from "./chain/tickers.ts";
-import { loadConfig } from "./config.ts";
+import { dbIsEphemeral, loadConfig } from "./config.ts";
 import { dropMockDataOnSwitch, getKv, openDb, setKv } from "./db.ts";
 import { harvestFees } from "./harvester.ts";
 import { createApp } from "./web/server.ts";
@@ -24,6 +24,12 @@ let db: ReturnType<typeof openDb>;
 let long: ReturnType<typeof createLongClient>;
 try {
   cfg = loadConfig();
+  if (dbIsEphemeral(cfg.dbPath)) {
+    const msg = `the database (${cfg.dbPath}) is on the container disk, which Railway wipes on every deploy. Add a Volume to this service with mount path /data and set DB_PATH=/data/longshot.db.`;
+    // Onchain the database is the fee ledger: losing it loses what every deployer is owed. Refuse to run.
+    if (cfg.chain.mode === "onchain") throw new Error(msg);
+    log(`WARNING: ${msg}`);
+  }
   db = openDb(cfg.dbPath);
   if (!cfg.sessionSecret) {
     // No SESSION_SECRET set: generate one and keep it in the database so logins survive restarts.

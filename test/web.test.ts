@@ -178,3 +178,20 @@ test("X_ENABLED accepts common spellings; healthz lists missing bot keys by name
   assert.ok(h.xMissing.includes("X_ACCESS_TOKEN"));
   assert.ok(!JSON.stringify(h).includes('"k"'));
 });
+
+test("Railway: the database is moved onto the Volume and flagged when there is none", async () => {
+  const { loadConfig, dbIsEphemeral } = await import("../src/config.ts");
+  const saved = { ...process.env };
+  try {
+    process.env.RAILWAY_ENVIRONMENT = "production";
+    process.env.DB_PATH = "data/longshot.db";
+    delete process.env.RAILWAY_VOLUME_MOUNT_PATH;
+    assert.equal(dbIsEphemeral(loadConfig().dbPath), true);
+    process.env.RAILWAY_VOLUME_MOUNT_PATH = "/data";
+    const cfg = loadConfig();
+    assert.equal(cfg.dbPath, "/data/longshot.db");
+    assert.equal(dbIsEphemeral(cfg.dbPath), false);
+  } finally {
+    process.env = saved;
+  }
+});

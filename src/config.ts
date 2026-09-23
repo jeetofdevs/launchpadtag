@@ -41,6 +41,27 @@ function int(name: string, fallback: number): number {
 /** Values copied from .env.example that must never be used as a real secret. */
 const PLACEHOLDER_SECRETS = new Set(["change-me-to-a-long-random-string", "REPLACE_WITH_A_LONG_RANDOM_STRING", "dev-only-change-me"]);
 
+/**
+ * On Railway the container disk is wiped on every deploy, so the database must live on a Volume.
+ * When a Volume is attached (RAILWAY_VOLUME_MOUNT_PATH) and DB_PATH doesn't point into it, use the Volume.
+ */
+function resolveDbPath(): string {
+  const dbPath = process.env.DB_PATH || "data/longshot.db";
+  const mount = process.env.RAILWAY_VOLUME_MOUNT_PATH?.replace(/\/$/, "");
+  if (mount && !dbPath.startsWith(`${mount}/`)) {
+    console.warn(`DB_PATH=${dbPath} is not on the Railway Volume (${mount}) — using ${mount}/longshot.db so data survives redeploys.`);
+    return `${mount}/longshot.db`;
+  }
+  return dbPath;
+}
+
+/** True when running on Railway without the database on a Volume: every redeploy would erase it. */
+export function dbIsEphemeral(dbPath: string): boolean {
+  if (!process.env.RAILWAY_ENVIRONMENT) return false;
+  const mount = process.env.RAILWAY_VOLUME_MOUNT_PATH?.replace(/\/$/, "");
+  return !mount || !dbPath.startsWith(`${mount}/`);
+}
+
 export function loadConfig() {
   // Hosts like Railway keep variables that were pasted with an empty value. Treat those as unset
   // so every setting falls back to its default instead of becoming "" / NaN.
@@ -55,7 +76,7 @@ export function loadConfig() {
   ) as Record<Stock, Address>;
 
   return {
-    dbPath: env("DB_PATH", "data/longshot.db"),
+    dbPath: resolveDbPath(),
     // Railway exposes the generated domain as RAILWAY_PUBLIC_DOMAIN.
     publicUrl: (process.env.PUBLIC_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : "http://localhost:8787")).replace(/\/$/, ""),
     /** "Login as test user" on /claim. Only ever allowed in mock mode. */
