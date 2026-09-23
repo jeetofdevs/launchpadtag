@@ -148,7 +148,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
           <li><i class="dot s1"></i><b>${pct(fee.share.deployer)} → you</b>, the deployer</li>
           <li><i class="dot s2"></i><b>${pct(fee.share.platform)} → LONGSHOT</b>, keeps the bot running<sup>*</sup></li>
         </ul>
-        <p class="muted">In dollars: every <b>$100</b> traded pays a $${(fee.poolFee).toFixed(2)} fee, and <b>$${(fee.deployer).toFixed(2)}</b> of it is yours. Rewards arrive in both your token and the paired stock.</p>
+        <p class="muted">Rewards arrive in both your token and the paired stock.</p>
         <p class="muted small"><sup>*</sup>LONGSHOT's ${pct(fee.share.platform)} includes the ${pct(fee.share.protocol)} Doppler launch-protocol fee. Your ${pct(fee.share.deployer)} is never reduced.</p>
       </div>
 
