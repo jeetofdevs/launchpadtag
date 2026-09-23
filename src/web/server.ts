@@ -104,7 +104,13 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     return c.body(letterLogo(sym));
   });
 
-  app.get("/healthz", (c) => c.json({ ok: true, chain: cfg.chain.mode, x: cfg.x.enabled, xLogin: Boolean(cfg.x.oauthClientId && cfg.x.oauthClientSecret), publicUrl: cfg.publicUrl, tickerIndexFresh: tickersFresh() }));
+  // Names only (never values) of the bot's X keys that are still empty, so setup problems are visible.
+  const X_BOT_KEYS = { X_BEARER_TOKEN: cfg.x.bearerToken, X_APP_KEY: cfg.x.appKey, X_APP_SECRET: cfg.x.appSecret, X_ACCESS_TOKEN: cfg.x.accessToken, X_ACCESS_SECRET: cfg.x.accessSecret };
+  const xMissing = Object.entries(X_BOT_KEYS).filter(([, v]) => !v.trim()).map(([k]) => k);
+  app.get("/healthz", (c) => c.json({
+    ok: true, chain: cfg.chain.mode, x: cfg.x.enabled, xMissing, listening: cfg.x.enabled ? `@${cfg.x.triggerHandle}` : null,
+    xLogin: Boolean(cfg.x.oauthClientId && cfg.x.oauthClientSecret), publicUrl: cfg.publicUrl, tickerIndexFresh: tickersFresh(),
+  }));
 
   /** "🎁 fees → @receiver" under the creator, shown when the creator sent the fees to another account. */
   const feesTo = (u: string | null) => (u ? html`<div class="small muted nowrap">🎁 fees → <a href="https://x.com/${u}" target="_blank" rel="noopener">@${u}</a></div>` : raw(""));

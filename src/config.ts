@@ -22,6 +22,12 @@ function env(name: string, fallback?: string): string {
   return v;
 }
 
+/** "true", "True", " TRUE ", "\"true\"", "1", "yes", "on" all count as on. */
+function flag(name: string): boolean {
+  const v = (process.env[name] ?? "").trim().replace(/^["']|["']$/g, "").trim().toLowerCase();
+  return ["true", "1", "yes", "on"].includes(v);
+}
+
 function int(name: string, fallback: number): number {
   const v = process.env[name];
   return v === undefined ? fallback : Number.parseInt(v, 10);
@@ -54,7 +60,7 @@ export function loadConfig() {
     sessionSecret: process.env.SESSION_SECRET?.trim() ?? "",
 
     x: {
-      enabled: process.env.X_ENABLED === "true",
+      enabled: flag("X_ENABLED"),
       /** LONGSHOT's own X account (posts the replies), shown on the website. */
       botHandle: env("BOT_HANDLE", "longshotpadxyz").replace(/^@/, ""),
       /**
@@ -82,7 +88,7 @@ export function loadConfig() {
        */
       tickerCooldownHours: int("TICKER_COOLDOWN_HOURS", 0),
       /** "Send fees" (`fees @user` in the launch tweet). Coming soon — off unless SEND_FEES_ENABLED=true. */
-      sendFeesEnabled: process.env.SEND_FEES_ENABLED === "true",
+      sendFeesEnabled: flag("SEND_FEES_ENABLED"),
     },
 
     chain: {

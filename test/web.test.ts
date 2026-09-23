@@ -154,3 +154,27 @@ test("brand assets are served and used for favicon and share image", async () =>
   assert.match(home, /og:image" content="https:\/\/longshotpad\.xyz\/brand\/og-1200x630\.png"/);
   assert.match(home, /<a class="logo" href="\/"><svg[^>]*class="mark"/);
 });
+
+test("X_ENABLED accepts common spellings; healthz lists missing bot keys by name only", async () => {
+  const { loadConfig } = await import("../src/config.ts");
+  const saved = { ...process.env };
+  try {
+    for (const v of ["true", "True", " TRUE ", '"true"', "1", "yes"]) {
+      process.env.X_ENABLED = v;
+      assert.equal(loadConfig().x.enabled, true, v);
+    }
+    for (const v of ["false", "0", "", "no"]) {
+      process.env.X_ENABLED = v;
+      assert.equal(loadConfig().x.enabled, false, v);
+    }
+  } finally {
+    process.env = saved;
+  }
+  const d = setup();
+  d.cfg.sessionSecret = "x".repeat(32);
+  d.cfg.x.appKey = "k";
+  const h = await (await createApp(d.cfg, d.db, d.long).request("http://x/healthz")).json() as { xMissing: string[] };
+  assert.ok(!h.xMissing.includes("X_APP_KEY"));
+  assert.ok(h.xMissing.includes("X_ACCESS_TOKEN"));
+  assert.ok(!JSON.stringify(h).includes('"k"'));
+});
