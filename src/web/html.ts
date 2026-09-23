@@ -21,13 +21,12 @@ export function html(strings: TemplateStringsArray, ...values: unknown[]): Raw {
 }
 
 const CSS = `
-:root{--bg:#0b0d0c;--panel:#141816;--line:#232a26;--text:#e9f1ec;--muted:#8a978f;--accent:#35f28a;--accent-ink:#04200f;--accent-2:#1f8f53;--accent-3:#4b5a52;--burn:#ff7a3d;--burn-ink:#1c0a00;--danger:#ff6b6b;--warn:#ffc857}
-@media (prefers-color-scheme: light){:root{--bg:#f6f8f7;--panel:#ffffff;--line:#dfe6e2;--text:#0e1511;--muted:#5d6b63;--accent:#0fae57;--accent-ink:#ffffff;--accent-2:#7fd6a6;--accent-3:#b7c4bc;--burn:#c2410c;--burn-ink:#ffffff;--danger:#c62828;--warn:#9a6700}}
+:root{--bg:#04130b;--panel:#0a2217;--panel-2:#0e2c1e;--line:#17402c;--text:#e4f7ec;--muted:#8db8a1;--accent:#35f28a;--accent-ink:#022012;--accent-2:#1d8f55;--accent-3:#2c5a43;--burn:#ff7a3d;--burn-ink:#1c0a00;--danger:#ff6b6b;--warn:#ffc857;color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{margin:0;background:var(--bg);background-image:radial-gradient(1200px 600px at 80% -10%,rgba(53,242,138,.12),transparent 60%),radial-gradient(900px 500px at -10% 30%,rgba(29,143,85,.14),transparent 60%);background-attachment:fixed;color:var(--text);font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 a{color:var(--accent)}
 .wrap{max-width:880px;margin:0 auto;padding:0 16px}
-header{border-bottom:1px solid var(--line)}
+header{border-bottom:1px solid var(--line);background:rgba(4,19,11,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);position:sticky;top:0;z-index:20}
 header .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;height:60px}
 .logo{font-weight:800;letter-spacing:.08em;color:var(--text);text-decoration:none}
 .logo span{color:var(--accent)}
@@ -42,7 +41,7 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;gap:1
 .menu summary::-webkit-details-marker{display:none}
 .menu-panel{position:absolute;right:0;top:36px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px;display:flex;flex-direction:column;min-width:190px;z-index:10;box-shadow:0 12px 30px rgba(0,0,0,.25)}
 .menu-panel a{color:var(--text);text-decoration:none;padding:10px 12px;border-radius:8px}
-.menu-panel a:hover{background:var(--bg)}
+.menu-panel a:hover{background:var(--panel-2)}
 @media (max-width:760px){.nav-main{display:none}.menu{display:block}.nav-right{margin-left:auto}}
 main{padding:32px 0 64px}
 h1{font-size:clamp(32px,6vw,52px);line-height:1.05;margin:8px 0 12px;letter-spacing:-.02em}
@@ -152,7 +151,8 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
 .features{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 @media (max-width:860px){.features{grid-template-columns:1fr 1fr}}
 @media (max-width:520px){.features{grid-template-columns:1fr}}
-.feat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+.feat{transition:border-color .15s,transform .15s;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+.feat:hover,.step:hover,.phase:hover{border-color:var(--accent-2)}
 .feat i{font-style:normal;font-size:22px}
 .feat b{display:block;margin:8px 0 4px;font-size:16px}
 .feat p{margin:0;color:var(--muted);font-size:14px}
@@ -170,7 +170,7 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
 .faq summary::after{content:"+";color:var(--muted);font-weight:400}
 .faq details[open] summary::after{content:"−"}
 .faq details p{margin:0 0 16px;color:var(--muted)}
-.cta{margin-top:56px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:32px;text-align:center}
+.cta{margin-top:56px;background:linear-gradient(135deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:18px;padding:32px;text-align:center}
 .cta h2{font-size:clamp(26px,5vw,40px);margin:0 0 8px}
 .cta p{color:var(--muted);margin:0 0 18px}
 .cta .row{justify-content:center}
@@ -193,7 +193,7 @@ export interface LayoutOpts {
   publicUrl?: string;
 }
 
-const FAVICON = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#0b0d0c"/><circle cx="32" cy="32" r="18" fill="none" stroke="#35f28a" stroke-width="5"/><circle cx="32" cy="32" r="6" fill="#35f28a"/></svg>')}`;
+const FAVICON = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#04130b"/><circle cx="32" cy="32" r="18" fill="none" stroke="#35f28a" stroke-width="5"/><circle cx="32" cy="32" r="6" fill="#35f28a"/></svg>')}`;
 
 export function layout(title: string, body: Raw, o: LayoutOpts): string {
   const x = `https://x.com/${encodeURIComponent(o.botHandle)}`;
@@ -207,7 +207,7 @@ export function layout(title: string, body: Raw, o: LayoutOpts): string {
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website">
 ${o.publicUrl ? `<meta property="og:url" content="${esc(o.publicUrl)}">` : ""}
 <meta name="twitter:card" content="summary"><meta name="twitter:site" content="@${esc(o.botHandle)}">
-<meta name="theme-color" content="#0b0d0c"><link rel="icon" href="${FAVICON}">
+<meta name="theme-color" content="#04130b"><link rel="icon" href="${FAVICON}">
 <style>${CSS}</style></head><body>
 <header><div class="wrap">
   <a class="logo" href="/">LONG<span>SHOT</span></a>
