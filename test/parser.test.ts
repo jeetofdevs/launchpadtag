@@ -21,8 +21,15 @@ test("works inside a reply prefix", () => {
   assert.equal(p("@elonmusk @longdotxyz launch $DOGEX lol")?.ticker, "DOGEX");
 });
 
-test("unknown pairing falls back to default instead of misparsing", () => {
-  assert.equal(p("@longdotxyz launch $ABC paired $AMZN")?.stock, "NVDA");
+test("a pair that isn't a Long.xyz market is flagged, not silently swapped", () => {
+  const r = p("@longdotxyz launch $ABC paired $ZZZZ");
+  assert.equal(r?.unknownStock, "ZZZZ");
+});
+
+test("any Long.xyz market can be paired, including 1-letter symbols", () => {
+  assert.equal(p("@longdotxyz launch $ABC paired $AMZN")?.stock, "AMZN");
+  assert.equal(p("@longdotxyz launch $ABC paired $f")?.stock, "F");
+  assert.equal(p('@longdotxyz launch $ABC "Gold Bug" paired $GLD')?.stock, "GLD");
 });
 
 test("rejects non-commands", () => {

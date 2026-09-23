@@ -7,7 +7,7 @@ import { tokenUrl } from "../bot.ts";
 import type { LongClient } from "../chain/index.ts";
 import { claimAll } from "../claim.ts";
 import { BURN_ADDRESS, STOCKS, type Config } from "../config.ts";
-import { POPULAR_STOCKS, STOCK_TOKENS } from "../stocks.ts";
+import { LONG_MARKET_CATEGORIES, POPULAR_STOCKS, STOCK_TOKENS, type Stock } from "../stocks.ts";
 import type { DB } from "../db.ts";
 import { balances, feeReport, recentPayouts, rewardTotals, type RewardTotals } from "../ledger.ts";
 import { buildMetadata } from "../metadata.ts";
@@ -245,6 +245,15 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     const q = (c.req.query("q") ?? "").replace(/^\$/, "").trim().toUpperCase().slice(0, 40);
     const all = STOCKS.map((s) => ({ symbol: s, name: STOCK_TOKENS[s].name, address: long.stockToken(s) }));
     const rows = q ? all.filter((r) => r.symbol.startsWith(q) || r.name.toUpperCase().includes(q)) : all;
+    type Row = (typeof all)[number];
+    // Group like app.long.xyz; symbols added via PAIR_MARKETS that aren't in a category go under "More".
+    const groups = (list: Row[]) => {
+      const bySym = new Map(list.map((r) => [r.symbol, r]));
+      const out = LONG_MARKET_CATEGORIES.map((c) => ({ name: c.name, description: c.description, rows: c.symbols.filter((x) => bySym.has(x)).map((x) => bySym.get(x)!) }));
+      const placed = new Set(LONG_MARKET_CATEGORIES.flatMap((c) => c.symbols as Stock[]));
+      out.push({ name: "More", description: "", rows: list.filter((r) => !placed.has(r.symbol)) });
+      return out.filter((g) => g.rows.length);
+    };
     const example = (s: string) => `https://x.com/intent/post?text=${encodeURIComponent(`@${cfg.x.triggerHandle} launch $TICKER "Token Name" paired $${s}`)}`;
     return c.html(await render(c, "Stocks you can pair with · LONGSHOT", html`
       <span class="tag">${STOCKS.length} stocks &amp; ETFs</span>
@@ -252,12 +261,14 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       <p class="lead">Every Robinhood Stock Token used on Long.xyz. Add <code>paired $SYMBOL</code> to your tweet — no pair means $${cfg.chain.defaultStock}.</p>
       <div class="chipline">${POPULAR_STOCKS.map((s) => html`<a class="chip" href="${example(s)}" target="_blank" rel="noopener">$${s}</a>`)}</div>
       <form class="search" method="get" action="/stocks"><input type="search" name="q" value="${q}" placeholder="Search symbol or company" aria-label="Search stocks"><button class="btn" type="submit">Search</button></form>
-      ${rows.length === 0 ? html`<p class="muted">No matches.</p>` : html`
+      ${rows.length === 0 ? html`<p class="muted">No matches.</p>` : groups(rows).map((g) => html`
+      <h3>${g.name} <span class="muted small">· ${g.rows.length} market${g.rows.length === 1 ? "" : "s"}</span></h3>
+      ${g.description ? html`<p class="muted small" style="margin-top:-6px">${g.description}</p>` : raw("")}
       <div class="scroll"><table><tr><th>Symbol</th><th>Name</th><th>Token</th><th></th></tr>
-      ${rows.map((r) => html`<tr><td><b>$${r.symbol}</b></td><td>${r.name}</td>
+      ${g.rows.map((r) => html`<tr><td><b>$${r.symbol}</b></td><td>${r.name}</td>
         <td><a class="mono" href="${long.addressUrl(r.address)}" target="_blank" rel="noopener">${shortAddr(r.address)}</a></td>
         <td><a class="btn sm ghost nowrap" href="${example(r.symbol)}" target="_blank" rel="noopener">Launch →</a></td></tr>`)}
-      </table></div>`}
+      </table></div>`)}
     `, `Launch a token paired with any of ${STOCKS.length} Robinhood Stock Tokens on Long.xyz.`));
   });
 

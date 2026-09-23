@@ -211,11 +211,32 @@ function known(s: string): s is Stock {
   return Object.hasOwn(STOCK_TOKENS, s);
 }
 
+export interface MarketCategory {
+  name: string;
+  description: string;
+  symbols: Stock[];
+}
+
 /**
- * Markets offered on app.long.xyz's "Pick your pairing asset" screen. Only these can be used in
- * `paired $SYMBOL`. Override with PAIR_MARKETS="NVDA,TSLA,..." (comma or space separated).
+ * Markets offered on app.long.xyz's "Pick your pairing asset" screen, grouped the same way.
+ * Only these can be used in `paired $SYMBOL`. PAIR_MARKETS="NVDA,TSLA,..." overrides the list.
  */
-export const LONG_MARKETS: Stock[] = ["NVDA", "AAPL", "MSFT", "GOOGL", "TSLA", "MU", "SPCX"];
+export const LONG_MARKET_CATEGORIES: MarketCategory[] = [
+  { name: "New", description: "The latest markets listed on Robinhood Chain.", symbols: ["DDOG", "RUN", "GLXY", "RCAT", "ON", "PENG"] },
+  { name: "Big Tech", description: "The five largest listed technology companies.", symbols: ["AAPL", "AMZN", "MSFT", "META", "GOOGL"] },
+  { name: "Visionaries", description: "Founder-led companies chasing outsized futures.", symbols: ["TSLA", "SPCX", "PLTR"] },
+  { name: "Hardware", description: "Chips, servers and the compute supply chain.", symbols: ["NVDA", "ORCL", "SNDK", "MU", "AMD", "INTC", "CRWV", "DELL", "TSM", "ASML", "SKHY", "QUBT", "NBIS", "ON", "PENG"] },
+  { name: "Software & Cloud", description: "Enterprise software, cloud, data and commerce platforms.", symbols: ["NET", "IBM", "BB", "FIG", "SHOP", "SNOW", "DDOG"] },
+  { name: "Finance", description: "Exchanges, fintech and crypto-treasury firms.", symbols: ["COIN", "SOFI", "NU", "MSTR", "GLXY"] },
+  { name: "Consumer", description: "Household names from retail to logistics.", symbols: ["COST", "GME", "CCL", "UPS", "LULU"] },
+  { name: "Autos & EV", description: "Carmakers from Detroit to the EV upstarts.", symbols: ["F", "RIVN", "TSLA"] },
+  { name: "Aerospace & Defense", description: "Flight, launch, drones and defense manufacturers.", symbols: ["BA", "LMT", "RCAT", "SPCX"] },
+  { name: "Healthcare", description: "Biotech, pharma and consumer health.", symbols: ["MRNA", "HIMS", "LLY", "PFE", "JNJ"] },
+  { name: "Commodities", description: "Oil, silver, energy and rare-earth materials.", symbols: ["BE", "USAR", "USO", "SLV", "RUN"] },
+  { name: "ETFs", description: "Broad-market, sector and asset-backed index funds.", symbols: ["SPY", "QQQ", "GLD", "SGOV", "XLK"] },
+];
+
+export const LONG_MARKETS: Stock[] = [...new Set(LONG_MARKET_CATEGORIES.flatMap((c) => c.symbols))];
 
 function pairMarkets(): Stock[] {
   const raw = (process.env.PAIR_MARKETS ?? "").split(/[\s,]+/).map((x) => x.replace(/^\$/, "").trim().toUpperCase()).filter(Boolean);
