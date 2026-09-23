@@ -39,7 +39,7 @@ try {
   fatal(e);
 }
 
-log(`LONGSHOT starting — chain=${cfg.chain.mode}, treasury=${long.treasury}, x=${cfg.x.enabled ? "on" : "off"}, url=${cfg.publicUrl}, db=${cfg.dbPath}`);
+log(`LONGSHOT starting — chain=${cfg.chain.mode}, treasury=${long.treasury}, x=${cfg.x.enabled ? "on" : "off"}, x-login=${cfg.x.oauthClientId ? (cfg.x.oauthClientSecret ? "on" : "missing X_OAUTH_CLIENT_SECRET") : "off (X_OAUTH_CLIENT_ID not set)"}, url=${cfg.publicUrl}, db=${cfg.dbPath}`);
 
 /** Run `fn` every `ms`, never overlapping with itself. */
 function every(ms: number, name: string, fn: () => Promise<unknown>) {

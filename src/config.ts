@@ -68,8 +68,8 @@ export function loadConfig() {
       accessToken: process.env.X_ACCESS_TOKEN ?? "",
       accessSecret: process.env.X_ACCESS_SECRET ?? "",
       bearerToken: process.env.X_BEARER_TOKEN ?? "",
-      oauthClientId: process.env.X_OAUTH_CLIENT_ID ?? "",
-      oauthClientSecret: process.env.X_OAUTH_CLIENT_SECRET ?? "",
+      oauthClientId: (process.env.X_OAUTH_CLIENT_ID ?? "").trim(),
+      oauthClientSecret: (process.env.X_OAUTH_CLIENT_SECRET ?? "").trim(),
       pollIntervalMs: int("X_POLL_INTERVAL_MS", 30_000),
     },
 
