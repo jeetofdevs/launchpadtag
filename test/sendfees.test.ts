@@ -19,9 +19,10 @@ test("parser reads `fees @user` in any position after the command", () => {
   assert.equal(p("@longshotpadxyz launch $GIFT coffees @bob")?.feesTo, undefined);
 });
 
-test("send fees is coming soon: off by default, the tweet gets a reply and nothing launches", async () => {
+test("send fees is on by default; with SEND_FEES_ENABLED=false the tweet gets a coming-soon reply and nothing launches", async () => {
   const d = setup();
-  assert.equal(d.cfg.rules.sendFeesEnabled, false);
+  assert.equal(d.cfg.rules.sendFeesEnabled, true);
+  d.cfg.rules.sendFeesEnabled = false;
   const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $SOON1 fees @bob_1", author: author({ id: "5" }), mentioned: [bob] });
   assert.equal(r.kind, "rejected");
   assert.match(d.replier.sent[0].text, /coming soon/);

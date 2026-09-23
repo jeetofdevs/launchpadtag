@@ -31,7 +31,7 @@ Why it works:
 ## 2. Command syntax
 
 ```
-@longshotpadxyz launch $<TICKER> "<Token Name>" [paired $<STOCK>] [+ image]
+@longshotpadxyz launch $<TICKER> "<Token Name>" [paired $<STOCK>] [fees @<user>] [+ image]
 ```
 
 | Part | Required | Notes |
@@ -41,6 +41,7 @@ Why it works:
 | `$TICKER` | ✅ | 2–10 letters/digits |
 | `"Token Name"` | ❌ | Defaults to the ticker |
 | `paired $STOCK` | ❌ | Any market offered on app.long.xyz — see `/stocks` on the website. Set the list with `PAIR_MARKETS`. Default: `NVDA` |
+| `fees @user` | ❌ | **Send fees:** the 80% creator share goes to that X account instead (also `fees to @user`). Permanent for the token |
 | Image in the tweet | ❌ | Becomes the token logo |
 
 Examples:
@@ -53,7 +54,7 @@ Examples:
 
 **Launch from a reply:** reply to any tweet with `@longshotpadxyz launch $TICKER` and the image of the original tweet is used as the logo, with the original tweet stored as the token's origin.
 
-**Send fees (coming soon, off by default; `SEND_FEES_ENABLED=true` turns it on):** with `fees @bob` the bot credits @bob's X account ID with the creator share. @bob signs in at `/claim` with their own X account to withdraw. The launch still counts toward the tweeter's daily limit, and the token page shows "Fees go to @bob". While it is off, a tweet with `fees @bob` gets a "coming soon" reply and nothing launches. When on, the bot rejects the launch if @bob isn't a real mentioned account, or is LONGSHOT itself.
+**Send fees (on by default; `SEND_FEES_ENABLED=false` turns it off):** with `fees @bob` the bot credits @bob's X account ID with the creator share. @bob signs in at `/claim` with their own X account to withdraw. The launch still counts toward the tweeter's daily limit, and the token page shows "Fees go to @bob". The bot rejects the launch if @bob isn't a real mentioned account, or is LONGSHOT itself.
 
 ### Bot replies
 

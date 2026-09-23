@@ -124,8 +124,8 @@ export function loadConfig() {
        * Default 72: Long.xyz frees a ticker again after 2–3 days. 0 = reserved forever.
        */
       tickerCooldownHours: int("TICKER_COOLDOWN_HOURS", 72),
-      /** "Send fees" (`fees @user` in the launch tweet). Coming soon — off unless SEND_FEES_ENABLED=true. */
-      sendFeesEnabled: flag("SEND_FEES_ENABLED"),
+      /** "Send fees" (`fees @user` in the launch tweet). On unless SEND_FEES_ENABLED=false. */
+      sendFeesEnabled: process.env.SEND_FEES_ENABLED === undefined || flag("SEND_FEES_ENABLED"),
     },
 
     chain: {

@@ -251,7 +251,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
         <p class="sub">What's shipped and what's next.</p>
         <div class="road">
           <div class="phase"><span class="st live">Live</span><b>Phase 1 — Launch by tag</b><ul><li>Launch from a tweet</li><li>Automatic reply with CA</li><li>80% creator rewards &amp; claim</li><li>Claim &amp; Burn</li><li>Reserved tickers &amp; open treasury</li></ul></div>
-          <div class="phase"><span class="st">Next</span><b>Phase 2 — Discovery</b><ul><li>Send fees to any X account</li><li>Creator leaderboard</li><li>Token pages with charts</li><li>Launch alerts on X</li><li>Referral rewards</li></ul></div>
+          <div class="phase"><span class="st">Next</span><b>Phase 2 — Discovery</b><ul><li>Creator leaderboard</li><li>Token pages with charts</li><li>Launch alerts on X</li><li>Referral rewards</li></ul></div>
           <div class="phase"><span class="st">Later</span><b>Phase 3 — Everywhere</b><ul><li>Launch from Farcaster &amp; Telegram</li><li>Buy &amp; info commands by tag</li><li>On-chain fee splitter</li></ul></div>
         </div>
       </section>
