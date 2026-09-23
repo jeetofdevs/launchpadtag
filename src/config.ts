@@ -28,6 +28,11 @@ function flag(name: string): boolean {
   return ["true", "1", "yes", "on"].includes(v);
 }
 
+/** Secrets pasted into a host UI often pick up spaces, newlines or quotes; any of those makes X answer 401. */
+function key(name: string): string {
+  return (process.env[name] ?? "").trim().replace(/^["']|["']$/g, "").trim();
+}
+
 function int(name: string, fallback: number): number {
   const v = process.env[name];
   return v === undefined ? fallback : Number.parseInt(v, 10);
@@ -68,11 +73,11 @@ export function loadConfig() {
        * automated replies to people who tagged you, so the trigger must be LONGSHOT's handle.
        */
       triggerHandle: env("TRIGGER_HANDLE", process.env.BOT_HANDLE ?? "longshotpadxyz").replace(/^@/, ""),
-      appKey: process.env.X_APP_KEY ?? "",
-      appSecret: process.env.X_APP_SECRET ?? "",
-      accessToken: process.env.X_ACCESS_TOKEN ?? "",
-      accessSecret: process.env.X_ACCESS_SECRET ?? "",
-      bearerToken: process.env.X_BEARER_TOKEN ?? "",
+      appKey: key("X_APP_KEY"),
+      appSecret: key("X_APP_SECRET"),
+      accessToken: key("X_ACCESS_TOKEN"),
+      accessSecret: key("X_ACCESS_SECRET"),
+      bearerToken: key("X_BEARER_TOKEN"),
       oauthClientId: (process.env.X_OAUTH_CLIENT_ID ?? "").trim(),
       oauthClientSecret: (process.env.X_OAUTH_CLIENT_SECRET ?? "").trim(),
       pollIntervalMs: int("X_POLL_INTERVAL_MS", 30_000),
