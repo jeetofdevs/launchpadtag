@@ -5,6 +5,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY tsconfig.json ./
 COPY src ./src
+COPY brand ./brand
 # SQLite lives here; mount a Railway Volume at /data so it survives redeploys.
 ENV DB_PATH=/data/longshot.db
 EXPOSE 8787

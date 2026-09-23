@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 export function esc(s: unknown): string {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 }
@@ -28,7 +29,8 @@ a{color:var(--accent)}
 .wrap{max-width:880px;margin:0 auto;padding:0 16px}
 header{border-bottom:1px solid var(--line);background:rgba(4,19,11,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);position:sticky;top:0;z-index:20}
 header .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;height:60px}
-.logo{font-weight:800;letter-spacing:.08em;color:var(--text);text-decoration:none}
+.logo{font-weight:800;letter-spacing:.08em;color:var(--text);text-decoration:none;display:inline-flex;align-items:center}
+.logo .mark{width:26px;height:26px;flex:none;margin-right:8px}
 .logo span{color:var(--accent)}
 .nav-main{display:flex;gap:22px;margin-left:28px;margin-right:auto}
 .nav-main a,.icon-link{color:var(--muted);text-decoration:none;font-size:14px}
@@ -195,7 +197,10 @@ export interface LayoutOpts {
   publicUrl?: string;
 }
 
-const FAVICON = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#04130b"/><circle cx="32" cy="32" r="18" fill="none" stroke="#35f28a" stroke-width="5"/><circle cx="32" cy="32" r="6" fill="#35f28a"/></svg>')}`;
+const BRAND_DIR = new URL("../../brand/", import.meta.url);
+const FAVICON = `data:image/svg+xml,${encodeURIComponent(readFileSync(new URL("longshot-logo.svg", BRAND_DIR), "utf8"))}`;
+/** The LONGSHOT mark (bullseye + rising arrow) inlined next to the wordmark. */
+const MARK = readFileSync(new URL("longshot-mark.svg", BRAND_DIR), "utf8").replace(/ width="\d+" height="\d+"/, ' class="mark" aria-hidden="true"');
 
 export function layout(title: string, body: Raw, o: LayoutOpts): string {
   const x = `https://x.com/${encodeURIComponent(o.botHandle)}`;
@@ -208,11 +213,12 @@ export function layout(title: string, body: Raw, o: LayoutOpts): string {
 <meta name="description" content="${esc(desc)}">
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website">
 ${o.publicUrl ? `<meta property="og:url" content="${esc(o.publicUrl)}">` : ""}
-<meta name="twitter:card" content="summary"><meta name="twitter:site" content="@${esc(o.botHandle)}">
+${o.publicUrl ? `<meta property="og:image" content="${esc(o.publicUrl)}/brand/og-1200x630.png"><meta name="twitter:image" content="${esc(o.publicUrl)}/brand/og-1200x630.png">` : ""}
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@${esc(o.botHandle)}">
 <meta name="theme-color" content="#04130b"><link rel="icon" href="${FAVICON}">
 <style>${CSS}</style></head><body>
 <header><div class="wrap">
-  <a class="logo" href="/">LONG<span>SHOT</span></a>
+  <a class="logo" href="/">${MARK}LONG<span>SHOT</span></a>
   <nav class="nav-main"><a href="/launches">Launches</a><a href="/stocks">Stocks</a><a href="/#tokenomics">Tokenomics</a><a href="/fees">Transparency</a><a href="/#faq">FAQ</a></nav>
   <div class="nav-right">
     <a class="icon-link" href="${x}" target="_blank" rel="noopener" aria-label="LONGSHOT on X">𝕏</a>
@@ -223,7 +229,7 @@ ${o.publicUrl ? `<meta property="og:url" content="${esc(o.publicUrl)}">` : ""}
 <main><div class="wrap">${body.html}</div></main>
 <footer><div class="wrap">
   <div class="foot-grid">
-    <div><a class="logo" href="/">LONG<span>SHOT</span></a><p>One tweet. One token.<br>Stock-paired launches on Long.xyz.</p></div>
+    <div><a class="logo" href="/">${MARK}LONG<span>SHOT</span></a><p>One tweet. One token.<br>Stock-paired launches on Long.xyz.</p></div>
     <div><b>Product</b><a href="/launches">Launches</a><a href="/stocks">Stocks</a><a href="/claim">Claim rewards</a><a href="/#how">How it works</a></div>
     <div><b>Resources</b><a href="/#tokenomics">Tokenomics</a><a href="/fees">Transparency</a><a href="/#faq">FAQ</a></div>
     <div><b>Community</b><a href="${x}" target="_blank" rel="noopener">𝕏 @${esc(o.botHandle)}</a><a href="https://app.long.xyz" target="_blank" rel="noopener">Long.xyz</a></div>

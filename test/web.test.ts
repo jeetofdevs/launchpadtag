@@ -136,3 +136,17 @@ test("stock logos: pages show them, letter badge fallback, unknown symbol 404", 
   assert.match(await svg.text(), />NVD</);
   assert.equal((await app.request("http://x/logo/ZZZZ")).status, 404);
 });
+
+test("brand assets are served and used for favicon and share image", async () => {
+  const d = setup();
+  d.cfg.sessionSecret = "x".repeat(32);
+  d.cfg.publicUrl = "https://longshotpad.xyz";
+  const app = createApp(d.cfg, d.db, d.long);
+  const png = await app.request("https://longshotpad.xyz/brand/og-1200x630.png", { headers: { host: "longshotpad.xyz" } });
+  assert.equal(png.status, 200);
+  assert.equal(png.headers.get("content-type"), "image/png");
+  assert.equal((await app.request("https://longshotpad.xyz/brand/..%2Fpackage.json", { headers: { host: "longshotpad.xyz" } })).status, 404);
+  const home = await (await app.request("https://longshotpad.xyz/stocks", { headers: { host: "longshotpad.xyz" } })).text();
+  assert.match(home, /og:image" content="https:\/\/longshotpad\.xyz\/brand\/og-1200x630\.png"/);
+  assert.match(home, /<a class="logo" href="\/"><svg[^>]*class="mark"/);
+});

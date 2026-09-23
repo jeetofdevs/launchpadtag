@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { Hono, type Context } from "hono";
 import { deleteCookie, getSignedCookie, setSignedCookie } from "hono/cookie";
@@ -78,6 +79,17 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       return c.redirect(`${cfg.publicUrl}${url.pathname}${url.search}`, 301);
     }
     await next();
+  });
+
+  // ── Brand assets (logo, X profile/header, share image) ────────────────────
+  const BRAND_FILES = new Set(["longshot-logo.svg", "longshot-mark.svg", "longshot-logo-1000.png", "x-profile-400.png", "x-header-1500x500.png", "og-1200x630.png"]);
+  app.get("/brand/:file", async (c) => {
+    const file = c.req.param("file");
+    if (!BRAND_FILES.has(file)) return c.notFound();
+    const body = await readFile(new URL(`../../brand/${file}`, import.meta.url));
+    c.header("Content-Type", file.endsWith(".svg") ? "image/svg+xml" : "image/png");
+    c.header("Cache-Control", "public, max-age=86400");
+    return c.body(body);
   });
 
   // ── Market logos ──────────────────────────────────────────────────────────
