@@ -34,11 +34,14 @@ export function validateLaunch(
 ): Verdict {
   if (author.protected) return { ok: false, reason: "protected accounts cannot launch" };
 
+  // Allowlisted accounts (UNLIMITED_ACCOUNTS) skip the account minimums and the daily limit.
+  const unlimited = rules.unlimitedAccounts.includes(author.id) || rules.unlimitedAccounts.includes(author.username.toLowerCase());
+
   const ageDays = (now - author.createdAt.getTime()) / DAY;
-  if (ageDays < rules.minAccountAgeDays)
+  if (!unlimited && ageDays < rules.minAccountAgeDays)
     return { ok: false, reason: `account must be at least ${rules.minAccountAgeDays} days old` };
 
-  if (author.followers < rules.minFollowers)
+  if (!unlimited && author.followers < rules.minFollowers)
     return { ok: false, reason: `account needs at least ${rules.minFollowers} followers` };
 
   // Long.xyz only accepts letters in a ticker; its launcher reverts on anything else.
@@ -66,7 +69,7 @@ export function validateLaunch(
       "SELECT COUNT(*) AS n FROM launches WHERE x_user_id = ? AND created_at > ? AND status IN ('queued','deploying','live')",
     )
     .get(author.id, now - DAY) as { n: number };
-  if (recentByUser.n >= rules.launchesPerDay)
+  if (!unlimited && recentByUser.n >= rules.launchesPerDay)
     return { ok: false, reason: `limit is ${rules.launchesPerDay} launch(es) per 24 hours` };
 
   return { ok: true };

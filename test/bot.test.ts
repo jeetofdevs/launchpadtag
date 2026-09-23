@@ -133,3 +133,17 @@ test("tickers with numbers are refused before anything is launched (Long.xyz acc
   assert.match(d.replier.sent[0].text, /letters \(A–Z\)/);
   assert.equal((d.db.prepare("SELECT COUNT(*) AS n FROM launches WHERE status = 'live'").get() as { n: number }).n, 0);
 });
+
+test("UNLIMITED_ACCOUNTS: listed accounts have no daily limit or account minimums; ticker rules still apply", async () => {
+  const d = setup();
+  d.cfg.rules.unlimitedAccounts = ["devteam", "777"];
+  const dev = author({ id: "1", username: "DevTeam", followers: 0, createdAt: new Date() });
+  for (const t of ["DEVA", "DEVB", "DEVC"]) {
+    assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: `@longshotpadxyz launch $${t}`, author: dev })).kind, "live", t);
+  }
+  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $IDA", author: author({ id: "777" }) })).kind, "live");
+  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $IDB", author: author({ id: "777" }) })).kind, "live");
+  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $DEVA", author: dev })).kind, "rejected"); // ticker taken
+  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $OTHA", author: author({ id: "2" }) })).kind, "live");
+  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $OTHB", author: author({ id: "2" }) })).kind, "rejected"); // normal limit
+});
