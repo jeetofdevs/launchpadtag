@@ -100,3 +100,17 @@ test("swapped X_ACCESS_TOKEN / X_ACCESS_SECRET are detected and fixed", async ()
     process.env = saved;
   }
 });
+
+test("a failed launch is summarised in one line and shown in /healthz", async () => {
+  const { createApp } = await import("../src/web/server.ts");
+  const d = setup();
+  d.cfg.sessionSecret = "x".repeat(32);
+  const cause = Object.assign(new Error("Execution reverted with reason: SenderNotAirlock"), { shortMessage: "Execution reverted with reason: SenderNotAirlock" });
+  d.long.createToken = async () => { throw Object.assign(new Error("The contract function \"create\" reverted.\n\nContract Call:\n  data: 0xdeadbeef…"), { shortMessage: "The contract function \"create\" reverted.", cause }); };
+  const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $BOOM", author: author() });
+  assert.equal(r.kind, "failed");
+  const h = await (await createApp(d.cfg, d.db, d.long).request("http://x/healthz")).json() as { lastFailedLaunch: { ticker: string; error: string } };
+  assert.equal(h.lastFailedLaunch.ticker, "BOOM");
+  assert.match(h.lastFailedLaunch.error, /reverted\. \| Execution reverted with reason: SenderNotAirlock/);
+  assert.ok(!h.lastFailedLaunch.error.includes("\n"));
+});

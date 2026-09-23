@@ -31,3 +31,23 @@ export function shortRpcError(e: unknown): string {
   const hint = status === 403 || status === 429 ? " (the RPC is blocking or rate-limiting this server — set RPC_URL to a private endpoint)" : "";
   return `${msg}${status ? ` [HTTP ${status}]` : ""}${url ? ` ${url}` : ""}${hint}`;
 }
+
+/**
+ * Short, useful summary of a failed on-chain action: viem's short message, the revert reason if any,
+ * and the HTTP status for RPC failures. No HTML pages, no calldata dumps.
+ */
+export function chainErrorSummary(e: unknown): string {
+  const parts: string[] = [];
+  const seen = new Set<string>();
+  for (let c = e as { shortMessage?: string; message?: string; reason?: string; details?: string; status?: number; cause?: unknown } | undefined, depth = 0; c && depth < 6; c = c.cause as typeof c, depth++) {
+    for (const piece of [c.shortMessage, c.reason, c.details && !/<html|<!doctype/i.test(c.details) ? c.details : undefined, c.status ? `HTTP ${c.status}` : undefined]) {
+      const p = piece?.split("\n")[0]?.trim();
+      if (p && !seen.has(p)) { seen.add(p); parts.push(p); }
+    }
+    if (!c.shortMessage && depth === 0 && c.message) {
+      const p = c.message.split("\n")[0].trim();
+      if (!seen.has(p)) { seen.add(p); parts.push(p); }
+    }
+  }
+  return (parts.join(" | ") || String(e)).slice(0, 400);
+}

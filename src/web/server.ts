@@ -107,9 +107,16 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
   // Names only (never values) of the bot's X keys that are still empty, so setup problems are visible.
   const X_BOT_KEYS = { X_BEARER_TOKEN: cfg.x.bearerToken, X_APP_KEY: cfg.x.appKey, X_APP_SECRET: cfg.x.appSecret, X_ACCESS_TOKEN: cfg.x.accessToken, X_ACCESS_SECRET: cfg.x.accessSecret };
   const xMissing = Object.entries(X_BOT_KEYS).filter(([, v]) => !v.trim()).map(([k]) => k);
+  /** Most recent launch that failed on-chain (ticker, short reason, time), to debug without reading logs. */
+  const lastFailed = () => {
+    const r = db.prepare("SELECT ticker, reason, created_at FROM launches WHERE status = 'failed' ORDER BY created_at DESC LIMIT 1").get() as
+      | { ticker: string; reason: string | null; created_at: number } | undefined;
+    return r ? { ticker: r.ticker, error: (r.reason ?? "").replace(/(0x)?[0-9a-fA-F]{64,}/g, "[…]").slice(0, 400), at: new Date(r.created_at).toISOString() } : null;
+  };
   app.get("/healthz", (c) => c.json({
     ok: true, chain: cfg.chain.mode, x: cfg.x.enabled, xMissing, listening: cfg.x.enabled ? `@${cfg.x.triggerHandle}` : null,
     xLogin: Boolean(cfg.x.oauthClientId && cfg.x.oauthClientSecret), publicUrl: cfg.publicUrl, tickerIndexFresh: tickersFresh(),
+    lastFailedLaunch: lastFailed(),
   }));
 
   /** "🎁 fees → @receiver" under the creator, shown when the creator sent the fees to another account. */

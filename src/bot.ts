@@ -5,6 +5,7 @@ import { buildMetadata, publishMetadata } from "./metadata.ts";
 import { feeSplit, pct } from "./tokenomics.ts";
 import { marketLabel } from "./stocks.ts";
 import { parseLaunch } from "./parser.ts";
+import { chainErrorSummary } from "./chain/rpc.ts";
 import { validateLaunch, type Author } from "./validate.ts";
 
 export interface Mention {
@@ -128,7 +129,7 @@ export async function handleMention(deps: BotDeps, m: Mention, now = Date.now())
       .catch((e) => log(`reply failed: ${e}`));
     return { kind: "live", tokenAddress, txHash };
   } catch (e) {
-    const error = e instanceof Error ? e.message : String(e);
+    const error = chainErrorSummary(e);
     db.prepare("UPDATE launches SET status = 'failed', reason = ? WHERE tweet_id = ?").run(error.slice(0, 500), m.tweetId);
     log(`failed ${m.tweetId} $${cmd.ticker}: ${error}`);
     await replier
