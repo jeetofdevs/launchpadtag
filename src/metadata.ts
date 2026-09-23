@@ -6,6 +6,12 @@ export interface TokenMetadata {
   description: string;
   image: string | null;
   external_url: string;
+  /** Social links. Launchpads, explorers and wallets read different keys, so the X link is under all common ones. */
+  twitter: string;
+  x: string;
+  website: string;
+  extensions: { twitter: string; website: string };
+  socials: { type: "twitter" | "website"; url: string }[];
   attributes: { trait_type: string; value: string }[];
 }
 
@@ -20,6 +26,15 @@ export function buildMetadata(l: {
     description: `$${l.ticker} launched by @${l.x_username} via LONGSHOT on Long.xyz, paired with $${l.stock}. ${tweetUrl}`,
     image: l.image_url,
     external_url: `${publicUrl}/t/${l.tweet_id}`,
+    // The X link of the token is the tweet that launched it, like other launch-by-tag launchpads.
+    twitter: tweetUrl,
+    x: tweetUrl,
+    website: `${publicUrl}/t/${l.tweet_id}`,
+    extensions: { twitter: tweetUrl, website: `${publicUrl}/t/${l.tweet_id}` },
+    socials: [
+      { type: "twitter", url: tweetUrl },
+      { type: "website", url: `${publicUrl}/t/${l.tweet_id}` },
+    ],
     attributes: [
       { trait_type: "launched_by", value: `@${l.x_username}` },
       { trait_type: "paired", value: l.stock },

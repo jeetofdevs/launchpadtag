@@ -114,3 +114,14 @@ test("a failed launch is summarised in one line and shown in /healthz", async ()
   assert.match(h.lastFailedLaunch.error, /reverted\. \| Execution reverted with reason: SenderNotAirlock/);
   assert.ok(!h.lastFailedLaunch.error.includes("\n"));
 });
+
+test("token metadata links X to the launch tweet", async () => {
+  const { buildMetadata } = await import("../src/metadata.ts");
+  const m = buildMetadata({ ticker: "MOON", name: "Moon", stock: "NVDA", x_username: "alice", tweet_id: "123", image_url: null, origin_tweet: null }, "https://longshotpad.xyz");
+  const tweet = "https://x.com/alice/status/123";
+  assert.equal(m.twitter, tweet);
+  assert.equal(m.x, tweet);
+  assert.equal(m.extensions.twitter, tweet);
+  assert.deepEqual(m.socials[0], { type: "twitter", url: tweet });
+  assert.equal(m.website, "https://longshotpad.xyz/t/123");
+});
