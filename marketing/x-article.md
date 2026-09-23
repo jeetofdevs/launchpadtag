@@ -42,14 +42,12 @@ The meme and the token are born in the same place, at the same moment, in public
 @longshotpadxyz launch $MOON "Moon Nvidia" paired $NVDA
 ```
 
-| Part | Required | What it does |
-|---|---|---|
-| `@longshotpadxyz` | ✅ | Wakes up the bot |
-| `launch $TICKER` | ✅ | Your ticker: letters only, 2–10 characters |
-| `"Token Name"` | Optional | Defaults to the ticker |
-| `paired $STOCK` | Optional | Any of 72 markets (default: $NVDA) |
-| `fees @user` | Optional | Send the creator fees to another X account |
-| An image | Optional | Becomes the token logo |
+- **@longshotpadxyz** (required): wakes up the bot
+- **launch $TICKER** (required): your ticker, letters only, 2–10 characters
+- **"Token Name"** (optional): defaults to the ticker
+- **paired $STOCK** (optional): any of 72 markets, default $NVDA
+- **fees @user** (optional): send the creator fees to another X account
+- **An image** (optional): becomes the token logo
 
 You can also write `deploy` or `long` instead of `launch`.
 
@@ -75,21 +73,17 @@ Every trade pays a 1% fee. **80% of that fee is yours.** Sign in at **longshotpa
 
 ## Tokenomics: the same fair setup for every launch
 
-| | |
-|---|---|
-| **Total supply** | 1,000,000,000, fixed, no minting |
-| **Fair launch** | 100% of supply sold through the bonding curve |
-| **Team / presale** | 0% / 0%, no insiders |
-| **Liquidity** | Locked in the pool, no migration |
-| **Pair** | A real tokenized stock, ETF or Long.xyz market |
-| **Trading fee** | 1% per trade |
+- **Total supply:** 1,000,000,000, fixed, no minting
+- **Fair launch:** 100% of supply sold through the bonding curve
+- **Team / presale:** 0% / 0%, no insiders
+- **Liquidity:** locked in the pool, no migration
+- **Pair:** a real tokenized stock, ETF or Long.xyz market
+- **Trading fee:** 1% per trade
 
 ### Where every trade's fee goes
 
-| Recipient | Share of the 1% fee | Per $100 traded |
-|---|---|---|
-| **You (the X account that tagged)** | **80%** | $0.80 |
-| LONGSHOT | 20% | $0.20 |
+- **You (the X account that tagged): 80%**, or $0.80 per $100 traded
+- **LONGSHOT: 20%**, or $0.20 per $100 traded
 
 Long.xyz's own protocol cut is paid **out of LONGSHOT's 20%**, so your 80% is never reduced.
 
