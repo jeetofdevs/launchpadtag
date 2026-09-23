@@ -243,7 +243,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
   // ── Supported stocks ──────────────────────────────────────────────────────
   app.get("/stocks", async (c) => {
     const q = (c.req.query("q") ?? "").replace(/^\$/, "").trim().toUpperCase().slice(0, 40);
-    const all = STOCKS.map((s) => ({ symbol: s, name: STOCK_TOKENS[s].name, address: long.stockToken(s) }));
+    const all = STOCKS.map((s) => ({ symbol: s, name: STOCK_TOKENS[s].name, address: cfg.chain.stockTokens[s] })); // real Robinhood Chain addresses, even in test mode
     const rows = q ? all.filter((r) => r.symbol.startsWith(q) || r.name.toUpperCase().includes(q)) : all;
     type Row = (typeof all)[number];
     // Group like app.long.xyz; symbols added via PAIR_MARKETS that aren't in a category go under "More".
@@ -266,7 +266,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       ${g.description ? html`<p class="muted small" style="margin-top:-6px">${g.description}</p>` : raw("")}
       <div class="scroll"><table><tr><th>Symbol</th><th>Name</th><th>Token</th><th></th></tr>
       ${g.rows.map((r) => html`<tr><td><b>$${r.symbol}</b></td><td>${r.name}</td>
-        <td><a class="mono" href="${long.addressUrl(r.address)}" target="_blank" rel="noopener">${shortAddr(r.address)}</a></td>
+        <td><a class="mono" href="${cfg.chain.explorerUrl}/address/${r.address}" target="_blank" rel="noopener">${shortAddr(r.address)}</a></td>
         <td><a class="btn sm ghost nowrap" href="${example(r.symbol)}" target="_blank" rel="noopener">Launch →</a></td></tr>`)}
       </table></div>`)}
     `, `Launch a token paired with any of ${STOCKS.length} Robinhood Stock Tokens on Long.xyz.`));
