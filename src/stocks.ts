@@ -1,7 +1,7 @@
 import type { Address } from "viem";
 
 /**
- * Every Robinhood Stock Token that has been used as a pair on Long.xyz (193 stocks & ETFs on Robinhood Chain).
+ * Every Robinhood Stock Token (plus USDG) that has been used as a pair on Long.xyz (193 stocks & ETFs on Robinhood Chain).
  * Sources: 0xsequence token-directory (index/robinhood/erc20.json) for names/addresses, intersected with the
  * numeraires seen in Long.xyz LaunchCreated events (Wayakart/stock-pair-alerts state, 2026-09-11).
  * Any entry can be overridden with STOCK_TOKEN_<SYMBOL>.
@@ -185,6 +185,7 @@ export const STOCK_TOKENS = {
   "UNH": { name: "UnitedHealth", address: "0xcF364ea52787e289De6F32077834056E3E70D6A8" },
   "UPS": { name: "UPS", address: "0xf23250dac154D05Bb671CB0d0eBEf3c635c79CE2" },
   "USAR": { name: "USA Rare Earth", address: "0xd917B029C761D264c6A312BBbcDA868658eF86a6" },
+  "USDG": { name: "Global Dollar", address: "0x5fc5360d0400a0fd4f2af552add042d716f1d168" },
   "USO": { name: "United States Oil Fund", address: "0xa30FA36Db767ad9eD3f7a60fC79526fB4d56D344" },
   "VICR": { name: "Vicor", address: "0x6006ed4B2F94110851ff7509D97D034f0EeD9226" },
   "VRT": { name: "Vertiv", address: "0xFA78C12E6488814A0262E4e802749a4a737d5fB7" },
@@ -202,13 +203,35 @@ export const STOCK_TOKENS = {
   "ZS": { name: "Zscaler", address: "0x7dc013eB55e436f30d7ED1AFE4E36d6e45e3c3f7" },
 } as const satisfies Record<string, { name: string; address: Address }>;
 
-export type Stock = keyof typeof STOCK_TOKENS;
+/** A pairable market symbol (upper-case), e.g. "NVDA" or an EXTRA_MARKETS entry like "NVDAX3L". */
+export type Stock = string;
+
+/**
+ * Extra ERC-20 markets (e.g. Long.xyz's own tokens) added without a code change:
+ * EXTRA_MARKETS="AI=0xabc…,NVDAX3L=0xdef…" — optionally "SYMBOL=0xaddr=Display name".
+ */
+export function extraMarkets(): Record<string, { name: string; address: Address }> {
+  const out: Record<string, { name: string; address: Address }> = {};
+  for (const part of (process.env.EXTRA_MARKETS ?? "").split(/[,\n]+/).map((x) => x.trim()).filter(Boolean)) {
+    const [sym, addr, ...name] = part.split("=").map((x) => x.trim());
+    const symbol = (sym ?? "").replace(/^\$/, "").toUpperCase();
+    if (!/^[A-Z0-9]{1,15}$/.test(symbol) || !/^0x[0-9a-fA-F]{40}$/.test(addr ?? "")) {
+      console.warn(`EXTRA_MARKETS: ignoring "${part}" (expected SYMBOL=0xAddress)`);
+      continue;
+    }
+    out[symbol] = { name: name.join("=") || symbol, address: addr as Address };
+  }
+  return out;
+}
+
+/** Every market we know a token address for: Robinhood Stock Tokens + USDG + EXTRA_MARKETS. */
+export const CATALOG: Record<string, { name: string; address: Address }> = { ...STOCK_TOKENS, ...extraMarkets() };
 
 /** Every Robinhood Stock Token we know an address for (name/address lookup only). */
-export const ALL_STOCK_SYMBOLS = Object.keys(STOCK_TOKENS) as Stock[];
+export const ALL_STOCK_SYMBOLS = Object.keys(CATALOG);
 
 function known(s: string): s is Stock {
-  return Object.hasOwn(STOCK_TOKENS, s);
+  return Object.hasOwn(CATALOG, s);
 }
 
 export interface MarketCategory {
@@ -234,6 +257,8 @@ export const LONG_MARKET_CATEGORIES: MarketCategory[] = [
   { name: "Healthcare", description: "Biotech, pharma and consumer health.", symbols: ["MRNA", "HIMS", "LLY", "PFE", "JNJ"] },
   { name: "Commodities", description: "Oil, silver, energy and rare-earth materials.", symbols: ["BE", "USAR", "USO", "SLV", "RUN"] },
   { name: "ETFs", description: "Broad-market, sector and asset-backed index funds.", symbols: ["SPY", "QQQ", "GLD", "SGOV", "XLK"] },
+  { name: "Media & Entertainment", description: "Streaming, social, gaming and media.", symbols: ["NFLX", "RDDT", "SNAP", "RBLX", "TTWO", "AMC", "DJT"] },
+  { name: "Dollar", description: "Pair with a US-dollar stablecoin.", symbols: ["USDG"] },
 ];
 
 export const LONG_MARKETS: Stock[] = [...new Set(LONG_MARKET_CATEGORIES.flatMap((c) => c.symbols))];
@@ -243,7 +268,8 @@ function pairMarkets(): Stock[] {
   const chosen = raw.filter(known);
   const unknown = raw.filter((x) => !known(x));
   if (unknown.length) console.warn(`PAIR_MARKETS: ignoring symbols without a known Stock Token address: ${unknown.join(", ")}`);
-  return chosen.length ? [...new Set(chosen)] : LONG_MARKETS;
+  // Default: Long.xyz's markets plus anything added through EXTRA_MARKETS.
+  return chosen.length ? [...new Set(chosen)] : [...new Set([...LONG_MARKETS, ...Object.keys(extraMarkets())])];
 }
 
 /** Stocks a launch can be paired with. */

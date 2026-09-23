@@ -1,6 +1,6 @@
 import type { Address, Hex } from "viem";
 
-import { STOCK_TOKENS, type Stock } from "./stocks.ts";
+import { CATALOG, type Stock } from "./stocks.ts";
 export { STOCKS, isStock, type Stock } from "./stocks.ts";
 
 /** Tokens sent here are gone forever ("Claim & Burn"). */
@@ -40,7 +40,7 @@ export function loadConfig() {
   }
   const chainMode = env("CHAIN_MODE", "mock") as "mock" | "onchain";
   const stockTokens = Object.fromEntries(
-    Object.entries(STOCK_TOKENS).map(([s, t]) => [s, (process.env[`STOCK_TOKEN_${s}`] || t.address) as Address]),
+    Object.entries(CATALOG).map(([s, t]) => [s, (process.env[`STOCK_TOKEN_${s}`] || t.address) as Address]),
   ) as Record<Stock, Address>;
 
   return {

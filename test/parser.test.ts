@@ -39,3 +39,17 @@ test("rejects non-commands", () => {
   assert.equal(p("@longdotxyzfake launch $ABC"), null);
   assert.equal(p("@someoneelse launch $ABC"), null);
 });
+
+test("EXTRA_MARKETS adds ERC-20 markets by address", async () => {
+  const { extraMarkets } = await import("../src/stocks.ts");
+  const saved = process.env.EXTRA_MARKETS;
+  process.env.EXTRA_MARKETS = "NVDAx3L=0x1111111111111111111111111111111111111111=NVDA 3x Long, AI=0x2222222222222222222222222222222222222222, bad=nope";
+  try {
+    const m = extraMarkets();
+    assert.deepEqual(Object.keys(m), ["NVDAX3L", "AI"]);
+    assert.equal(m.NVDAX3L.name, "NVDA 3x Long");
+    assert.equal(m.AI.name, "AI");
+  } finally {
+    if (saved === undefined) delete process.env.EXTRA_MARKETS; else process.env.EXTRA_MARKETS = saved;
+  }
+});

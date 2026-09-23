@@ -7,7 +7,7 @@ import { tokenUrl } from "../bot.ts";
 import type { LongClient } from "../chain/index.ts";
 import { claimAll } from "../claim.ts";
 import { BURN_ADDRESS, STOCKS, type Config } from "../config.ts";
-import { LONG_MARKET_CATEGORIES, POPULAR_STOCKS, STOCK_TOKENS, type Stock } from "../stocks.ts";
+import { CATALOG, LONG_MARKET_CATEGORIES, POPULAR_STOCKS, type Stock } from "../stocks.ts";
 import type { DB } from "../db.ts";
 import { balances, feeReport, recentPayouts, rewardTotals, type RewardTotals } from "../ledger.ts";
 import { buildMetadata } from "../metadata.ts";
@@ -243,7 +243,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
   // ── Supported stocks ──────────────────────────────────────────────────────
   app.get("/stocks", async (c) => {
     const q = (c.req.query("q") ?? "").replace(/^\$/, "").trim().toUpperCase().slice(0, 40);
-    const all = STOCKS.map((s) => ({ symbol: s, name: STOCK_TOKENS[s].name, address: cfg.chain.stockTokens[s] })); // real Robinhood Chain addresses, even in test mode
+    const all = STOCKS.map((s) => ({ symbol: s, name: CATALOG[s].name, address: cfg.chain.stockTokens[s] })); // real Robinhood Chain addresses, even in test mode
     const rows = q ? all.filter((r) => r.symbol.startsWith(q) || r.name.toUpperCase().includes(q)) : all;
     type Row = (typeof all)[number];
     // Group like app.long.xyz; symbols added via PAIR_MARKETS that aren't in a category go under "More".

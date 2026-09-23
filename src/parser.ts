@@ -22,7 +22,7 @@ export function parseLaunch(text: string, handle: string, defaultStock: Stock): 
   const re = new RegExp(
     `@${escape(handle)}\\s+(?:launch|deploy|long)\\s+\\$([A-Za-z0-9]{2,10})\\b` +
       `(?:\\s+"([^"\\n]{1,32})")?` +
-      `(?:\\s+paired\\s+\\$([A-Za-z0-9]{1,6})\\b)?`,
+      `(?:\\s+paired\\s+\\$([A-Za-z0-9]{1,15})\\b)?`,
     "i",
   );
   const m = normalized.match(re);
