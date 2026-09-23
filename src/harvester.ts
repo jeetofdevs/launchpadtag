@@ -11,7 +11,7 @@ import { recordFee } from "./ledger.ts";
  */
 export async function harvestFees(db: DB, long: LongClient, log: (m: string) => void = () => {}, protocolBps = 0n) {
   const tokens = db
-    .prepare("SELECT token_address, x_user_id, stock, ticker FROM launches WHERE status = 'live'")
+    .prepare("SELECT token_address, COALESCE(fee_user_id, x_user_id) AS x_user_id, stock, ticker FROM launches WHERE status = 'live'")
     .all() as { token_address: Address; x_user_id: string; stock: Stock; ticker: string }[];
 
   let harvested = 0;

@@ -15,6 +15,8 @@ export interface Mention {
   imageUrl?: string;
   /** Tweet being replied to, when launching from a reply. */
   originTweetId?: string;
+  /** Accounts @-mentioned in the tweet (from X's entities), used to resolve `fees @user` to an account ID. */
+  mentioned?: { id: string; username: string }[];
 }
 
 export interface Replier {
@@ -59,9 +61,23 @@ export async function handleMention(deps: BotDeps, m: Mention, now = Date.now())
      VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
 
+  // "Send fees": the creator share goes to another X account, identified by its ID (renames are safe).
+  const own = [cfg.x.botHandle, cfg.x.triggerHandle].map((h) => h.toLowerCase());
+  const wantsOther = cmd.feesTo && cmd.feesTo.toLowerCase() !== m.author.username.toLowerCase();
+  const recipient = wantsOther ? m.mentioned?.find((u) => u.username.toLowerCase() === cmd.feesTo!.toLowerCase()) : undefined;
+  const feeReject = !wantsOther
+    ? undefined
+    : own.includes(cmd.feesTo!.toLowerCase())
+      ? `fees can't be sent to @${cmd.feesTo}`
+      : !recipient
+        ? `couldn't find the X account @${cmd.feesTo} to send fees to`
+        : undefined;
+
   const verdict = cmd.unknownStock
     ? { ok: false as const, reason: `$${cmd.unknownStock} is not a stock you can pair with — see ${cfg.publicUrl}/stocks`, reserved: false }
-    : validateLaunch(db, cfg.rules, cmd, m.author, now);
+    : feeReject
+      ? { ok: false as const, reason: feeReject, reserved: false }
+      : validateLaunch(db, cfg.rules, cmd, m.author, now);
   if (!verdict.ok) {
     insert.run(m.tweetId, m.author.id, m.author.username, cmd.ticker, cmd.name, cmd.stock,
       m.imageUrl ?? null, m.originTweetId ?? null, "rejected", verdict.reason, now);
@@ -75,11 +91,15 @@ export async function handleMention(deps: BotDeps, m: Mention, now = Date.now())
 
   insert.run(m.tweetId, m.author.id, m.author.username, cmd.ticker, cmd.name, cmd.stock,
     m.imageUrl ?? null, m.originTweetId ?? null, "deploying", null, now);
+  if (recipient) {
+    db.prepare("UPDATE launches SET fee_user_id = ?, fee_username = ? WHERE tweet_id = ?").run(recipient.id, recipient.username, m.tweetId);
+  }
+  const earner = recipient?.username ?? m.author.username;
 
   try {
     const meta = buildMetadata(
       { ticker: cmd.ticker, name: cmd.name, stock: cmd.stock, x_username: m.author.username,
-        tweet_id: m.tweetId, image_url: m.imageUrl ?? null, origin_tweet: m.originTweetId ?? null },
+        tweet_id: m.tweetId, image_url: m.imageUrl ?? null, origin_tweet: m.originTweetId ?? null, fee_username: recipient?.username ?? null },
       cfg.publicUrl,
     );
     const metadataUri = await publishMetadata(cfg, m.tweetId, meta);
@@ -98,7 +118,9 @@ export async function handleMention(deps: BotDeps, m: Mention, now = Date.now())
           `📈 Paired: $${marketLabel(cmd.stock)}`,
           `📜 CA: ${short(tokenAddress)}`,
           `🔗 ${tokenUrl(cfg, tokenAddress)}`,
-          `💰 @${m.author.username} earns ${pct(feeSplit(cfg.chain).share.deployer)} of every trading fee — claim: ${cfg.publicUrl}/claim`,
+          recipient
+            ? `🎁 @${m.author.username} sent the fees to @${earner}: ${pct(feeSplit(cfg.chain).share.deployer)} of every trading fee — claim: ${cfg.publicUrl}/claim`
+            : `💰 @${earner} earns ${pct(feeSplit(cfg.chain).share.deployer)} of every trading fee — claim: ${cfg.publicUrl}/claim`,
         ].join("\n"),
       )
       .catch((e) => log(`reply failed: ${e}`));

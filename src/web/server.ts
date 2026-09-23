@@ -255,6 +255,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
         <details><summary>Who can launch?</summary><p>Any X account at least ${cfg.rules.minAccountAgeDays} days old with ${cfg.rules.minFollowers}+ followers. Each account can launch ${cfg.rules.launchesPerDay} token per 24 hours.</p></details>
         <details><summary>Why did the bot say my ticker is reserved?</summary><p>That ticker was already launched on Long.xyz (or via LONGSHOT), or it's a real Robinhood stock symbol. Pick another ticker and tweet again.</p></details>
         <details><summary>How do I claim my rewards?</summary><p>Open <a href="/claim">Claim</a>, sign in with the X account you tweeted from, enter any EVM wallet and press <b>Claim fees</b> — or <b>Claim &amp; burn supply</b> to burn the rewards paid in your own token. Rewards are tracked by your X account ID, so renaming your account is safe.</p></details>
+        <details><summary>Can I send the fees to someone else?</summary><p>Yes. Add <code>fees @username</code> to your tweet, e.g. <code>@${h} launch $GIFT "Gift" paired $NVDA fees @friend</code>. That account receives the ${pct(fee.share.deployer)} creator share and claims it here with its own X login. You still count as the creator, and the choice is permanent for that token.</p></details>
         <details><summary>What is Claim &amp; burn supply?</summary><p>One of the two claim buttons. Your stock rewards go to your wallet, while the rewards paid in your own token are sent to the burn address and destroyed forever — shrinking your token's supply.</p></details>
         <details><summary>How do I know the fees are paid fairly?</summary><p>The <a href="/fees">Transparency</a> page lists every fee collected per token and every payout or burn with its on-chain transaction. The Treasury address is <a class="mono" href="${long.addressUrl(long.treasury)}" target="_blank" rel="noopener">${shortAddr(long.treasury)}</a>.</p></details>
         <details><summary>Will LONGSHOT ever DM me?</summary><p>Never. We don't DM first and will never ask for your seed phrase or private key. Anyone who does is a scammer.</p></details>
@@ -334,7 +335,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
 
   app.get("/t/:tweetId", async (c) => {
     const l = db.prepare("SELECT * FROM launches WHERE tweet_id = ? AND status = 'live'").get(c.req.param("tweetId")) as
-      | { tweet_id: string; ticker: string; name: string; stock: string; x_username: string; token_address: string; tx_hash: string; created_at: number; image_url: string | null }
+      | { tweet_id: string; ticker: string; name: string; stock: string; x_username: string; fee_username: string | null; token_address: string; tx_hash: string; created_at: number; image_url: string | null }
       | undefined;
     if (!l) return c.notFound();
     const fees = feeReport(db).filter((r) => r.tokenAddress.toLowerCase() === l.token_address.toLowerCase());
@@ -349,6 +350,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       <div class="row" style="margin-top:18px"><a class="btn" href="${tokenUrl(cfg, l.token_address)}" target="_blank" rel="noopener">Trade on Long.xyz →</a><a class="btn ghost" href="https://x.com/${l.x_username}/status/${l.tweet_id}" target="_blank" rel="noopener">Launch tweet</a></div>
       <div class="kv">
         <div><small>Creator</small><a href="https://x.com/${l.x_username}" target="_blank" rel="noopener">@${l.x_username}</a></div>
+        ${l.fee_username ? html`<div><small>🎁 Fees go to</small><a href="https://x.com/${l.fee_username}" target="_blank" rel="noopener">@${l.fee_username}</a></div>` : raw("")}
         <div><small>Launched</small>${new Date(l.created_at).toISOString().slice(0, 16).replace("T", " ")} UTC</div>
         <div><small>Supply</small>1,000,000,000</div>
         <div><small>Contract</small><a class="mono" href="${long.addressUrl(l.token_address)}" target="_blank" rel="noopener">${shortAddr(l.token_address)}</a></div>
@@ -444,8 +446,11 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
 
     const bals = balances(db, s.uid);
     const tokens = db
-      .prepare("SELECT ticker, token_address FROM launches WHERE x_user_id = ? AND status = 'live' ORDER BY created_at DESC")
-      .all(s.uid) as { ticker: string; token_address: string }[];
+      .prepare("SELECT ticker, token_address FROM launches WHERE COALESCE(fee_user_id, x_user_id) = ? AND status = 'live' ORDER BY created_at DESC")
+      .all(s.uid) as { ticker: string; token_address: string }[]; // tokens whose creator fees go to this account
+    const sentAway = db
+      .prepare("SELECT ticker, fee_username FROM launches WHERE x_user_id = ? AND fee_user_id IS NOT NULL AND fee_user_id != x_user_id AND status = 'live' ORDER BY created_at DESC")
+      .all(s.uid) as { ticker: string; fee_username: string }[];
     const rows = await Promise.all(bals.map(async (b) => html`<tr>
       <td>${(await long.assetInfo(b.asset as Address)).symbol}</td>
       <td class="num">${await fmt(b.asset, b.totalFees)}</td>
@@ -465,7 +470,8 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       <div class="row" style="justify-content:space-between"><span class="tag">Claim · @${s.username}</span><a class="muted" href="/logout">Sign out</a></div>
       <h1>Your fees</h1>
       ${flash ? html`<div class="card">${flash}</div>` : raw("")}
-      <p class="muted">Your tokens: ${tokens.length ? tokens.map((t) => html`<a href="${tokenUrl(cfg, t.token_address)}">$${t.ticker}</a> `) : "none yet"}</p>
+      <p class="muted">Tokens earning for you: ${tokens.length ? tokens.map((t) => html`<a href="${tokenUrl(cfg, t.token_address)}">$${t.ticker}</a> `) : "none yet"}</p>
+      ${sentAway.length ? html`<p class="muted small">🎁 Fees you sent away: ${sentAway.map((t) => html`$${t.ticker} → @${t.fee_username} `)}</p>` : raw("")}
       ${rows.length === 0 ? html`<div class="card muted">No fees for this account yet. Fees are collected from the pools regularly.</div>` : html`
       <div class="scroll"><table><tr><th>Asset</th><th class="num">Total fee</th><th class="num">Your share</th><th class="num">LONGSHOT share</th><th class="num">Paid out</th><th class="num">Claimable</th></tr>${rows}</table></div>`}
       <form method="post" action="/claim" class="claim-form">

@@ -11,7 +11,7 @@ export interface TokenMetadata {
 
 export function buildMetadata(l: {
   ticker: string; name: string; stock: string; x_username: string;
-  tweet_id: string; image_url: string | null; origin_tweet: string | null;
+  tweet_id: string; image_url: string | null; origin_tweet: string | null; fee_username?: string | null;
 }, publicUrl: string): TokenMetadata {
   const tweetUrl = `https://x.com/${l.x_username}/status/${l.tweet_id}`;
   return {
@@ -24,6 +24,7 @@ export function buildMetadata(l: {
       { trait_type: "launched_by", value: `@${l.x_username}` },
       { trait_type: "paired", value: l.stock },
       { trait_type: "launch_tweet", value: tweetUrl },
+      ...(l.fee_username ? [{ trait_type: "fees_to", value: `@${l.fee_username}` }] : []),
       ...(l.origin_tweet ? [{ trait_type: "origin_tweet", value: `https://x.com/i/status/${l.origin_tweet}` }] : []),
     ],
   };

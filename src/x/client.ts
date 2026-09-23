@@ -42,7 +42,7 @@ export class XMentionSource {
       ...(sinceId ? { since_id: sinceId } : {}),
       max_results: 100,
       expansions: ["author_id", "attachments.media_keys", "referenced_tweets.id", "referenced_tweets.id.attachments.media_keys"],
-      "tweet.fields": ["created_at", "author_id", "referenced_tweets", "attachments", "note_tweet"],
+      "tweet.fields": ["created_at", "author_id", "referenced_tweets", "attachments", "note_tweet", "entities"],
       "user.fields": ["created_at", "public_metrics", "protected"],
       "media.fields": ["url", "type"],
     });
@@ -65,6 +65,9 @@ export class XMentionSource {
         },
         imageUrl: firstPhoto(page.includes, t) ?? firstPhoto(page.includes, origin),
         originTweetId: repliedTo?.id,
+        mentioned: [...(t.entities?.mentions ?? []), ...(t.note_tweet?.entities?.mentions ?? [])]
+          .filter((u): u is typeof u & { id: string } => Boolean(u.id))
+          .map((u) => ({ id: u.id, username: u.username })),
       });
     }
 

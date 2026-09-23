@@ -73,6 +73,11 @@ export function openDb(path: string): DB {
   const db = new DatabaseSync(path);
   db.exec("PRAGMA journal_mode = WAL;");
   db.exec(SCHEMA);
+  // "Send fees": the X account that receives the creator share when it isn't the deployer.
+  const cols = new Set((db.prepare("PRAGMA table_info(launches)").all() as { name: string }[]).map((c) => c.name));
+  if (!cols.has("fee_user_id")) db.exec("ALTER TABLE launches ADD COLUMN fee_user_id TEXT");
+  if (!cols.has("fee_username")) db.exec("ALTER TABLE launches ADD COLUMN fee_username TEXT");
+  db.exec("CREATE INDEX IF NOT EXISTS launches_fee_user ON launches(fee_user_id)");
   return db;
 }
 

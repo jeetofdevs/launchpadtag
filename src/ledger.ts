@@ -112,7 +112,7 @@ export interface TokenReport {
 export function feeReport(db: DB): TokenReport[] {
   const rows = db
     .prepare(
-      `SELECT f.token_address, l.ticker, l.x_username, f.asset,
+      `SELECT f.token_address, l.ticker, COALESCE(l.fee_username, l.x_username) AS x_username, f.asset,
               f.amount, f.deployer_share, f.treasury_share
        FROM fees f JOIN launches l ON l.token_address = f.token_address`,
     )
@@ -139,7 +139,8 @@ export function recentPayouts(db: DB, limit = 50) {
   return db
     .prepare(
       `SELECT p.amount, p.asset, p.to_address, p.tx_hash, p.created_at, p.x_user_id,
-              (SELECT x_username FROM launches l WHERE l.x_user_id = p.x_user_id ORDER BY created_at DESC LIMIT 1) AS x_username
+              COALESCE((SELECT x_username FROM launches l WHERE l.x_user_id = p.x_user_id ORDER BY created_at DESC LIMIT 1),
+                       (SELECT fee_username FROM launches l WHERE l.fee_user_id = p.x_user_id ORDER BY created_at DESC LIMIT 1)) AS x_username
        FROM payouts p WHERE p.status = 'sent' ORDER BY p.created_at DESC LIMIT ?`,
     )
     .all(limit) as { amount: string; asset: string; to_address: string; tx_hash: string; created_at: number; x_username: string | null }[];
