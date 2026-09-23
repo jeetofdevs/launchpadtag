@@ -55,10 +55,13 @@ export function loadConfig() {
 
     x: {
       enabled: process.env.X_ENABLED === "true",
-      /** Handle users tag to launch (without @). */
-      triggerHandle: env("TRIGGER_HANDLE", "longdotxyz"),
       /** LONGSHOT's own X account (posts the replies), shown on the website. */
       botHandle: env("BOT_HANDLE", "longshotpadxyz").replace(/^@/, ""),
+      /**
+       * Handle users tag to launch (without @). Defaults to the bot's own account: X only allows
+       * automated replies to people who tagged you, so the trigger must be LONGSHOT's handle.
+       */
+      triggerHandle: env("TRIGGER_HANDLE", process.env.BOT_HANDLE ?? "longshotpadxyz").replace(/^@/, ""),
       appKey: process.env.X_APP_KEY ?? "",
       appSecret: process.env.X_APP_SECRET ?? "",
       accessToken: process.env.X_ACCESS_TOKEN ?? "",

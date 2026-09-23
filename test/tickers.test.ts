@@ -16,7 +16,7 @@ function external(d: ReturnType<typeof setup>, symbol: string, agoMs: number) {
 test("ticker already launched on Long.xyz is reserved (case-insensitive) and the reply says so", async () => {
   const d = setup();
   external(d, "si", 2 * 3600_000);
-  const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $SI", author: author() });
+  const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $SI", author: author() });
   assert.equal(r.kind, "rejected");
   assert.equal(d.replier.sent[0].text, "❌ $SI reserved. Try again using another ticker.");
 });
@@ -24,7 +24,7 @@ test("ticker already launched on Long.xyz is reserved (case-insensitive) and the
 test("by default a ticker stays reserved forever", async () => {
   const d = setup();
   external(d, "MOON", 400 * DAY);
-  const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $MOON", author: author() });
+  const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $MOON", author: author() });
   assert.equal(r.kind, "rejected");
 });
 
@@ -32,14 +32,14 @@ test("with TICKER_COOLDOWN_HOURS=24 a ticker becomes free again after the window
   const d = setup();
   d.cfg.rules.tickerCooldownHours = 24;
   external(d, "MOON", 2 * DAY);
-  const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $MOON", author: author() });
+  const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $MOON", author: author() });
   assert.equal(r.kind, "live");
 });
 
 test("every Robinhood stock symbol is reserved, not just the 7 pairing stocks", async () => {
   const d = setup();
   for (const t of ["AMZN", "META", "PLTR", "GME"]) {
-    const r = await handleMention(d, { tweetId: nextTweetId(), text: `@longdotxyz launch $${t}`, author: author({ id: t }) });
+    const r = await handleMention(d, { tweetId: nextTweetId(), text: `@longshotpadxyz launch $${t}`, author: author({ id: t }) });
     assert.equal(r.kind, "rejected", t);
   }
   assert.match(d.replier.sent[0].text, /reserved/);
@@ -85,8 +85,8 @@ test("indexer picks up Long.xyz launches, then the bot refuses those tickers", a
   assert.equal(added, 2);
   assert.equal(getKv(d.db, "long_ticker_cursor"), chain.head.toString());
 
-  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $PEPE", author: author({ id: "a" }) })).kind, "rejected");
-  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $DOGE", author: author({ id: "b" }) })).kind, "live");
+  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $PEPE", author: author({ id: "a" }) })).kind, "rejected");
+  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $DOGE", author: author({ id: "b" }) })).kind, "live");
 
   // Second sync resumes from the cursor: nothing new, no re-scan.
   const before = chain.calls();
@@ -123,7 +123,7 @@ test("reserved-forever mode backfills the whole launcher history", async () => {
   ]);
   const idx = new LongTickerIndexer(d.cfg.chain, d.cfg.rules, d.db, () => {}, chain.client);
   assert.equal(await idx.sync(), 2);
-  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $ANCIENT", author: author() })).kind, "rejected");
+  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $ANCIENT", author: author() })).kind, "rejected");
 });
 
 test("concurrent sync calls share one run", async () => {

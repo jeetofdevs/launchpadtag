@@ -152,6 +152,8 @@ DM **@longdotxyz** and ask whether they are fine with the LONGSHOT bot and wheth
 
 ### D. Switch Railway to live mode
 
+> **The trigger is LONGSHOT's own account.** Users tag **@longshotpadxyz**, not @longdotxyz. X's automation rules only allow automated replies to people who tagged *your* account; replying to people who tagged someone else's account gets bots suspended. If Railway still has `TRIGGER_HANDLE=longdotxyz` from an old copy of `.env.example`, change it or delete it.
+
 Open **Variables** → **Raw Editor** and replace the contents with (fill in the blanks):
 
 ```
@@ -165,7 +167,7 @@ TREASURY_PRIVATE_KEY=
 MAX_PAYOUT_PER_CLAIM=0
 
 X_ENABLED=true
-TRIGGER_HANDLE=longdotxyz
+TRIGGER_HANDLE=longshotpadxyz
 BOT_HANDLE=longshotpadxyz
 X_BEARER_TOKEN=
 X_APP_KEY=
@@ -184,13 +186,13 @@ Check the logs for `LONGSHOT starting — chain=onchain, treasury=0x…`. The Tr
 
 ### E. Small test before announcing
 
-1. From your **personal** X account, tweet: `@longdotxyz launch $TESTLS "Test Longshot" paired $NVDA`
+1. From your **personal** X account, tweet: `@longshotpadxyz launch $TESTLS "Test Longshot" paired $NVDA`
 2. Within about a minute the bot should reply with the contract address.
 3. Buy a small amount of the token so it earns fees.
 4. Wait about 15 minutes (fees are collected periodically).
 5. Open `https://longshotpad.xyz/claim`, sign in with X, enter your personal wallet, and click **Claim fees**.
 6. Check your personal wallet: 80% of the fees should arrive.
-7. Tweet `@longdotxyz launch $SI` — the bot should reply `❌ $SI reserved. Try again using another ticker.`
+7. Tweet `@longshotpadxyz launch $SI` — the bot should reply `❌ $SI reserved. Try again using another ticker.`
 
 If all of this works, LONGSHOT is ready to announce. 🚀
 

@@ -153,7 +153,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
           </div>
           <div class="tweet">
             <div class="tw-head"><span class="av">LS</span><span class="tw-name">LONGSHOT<small>@${cfg.x.botHandle} · automated</small></span></div>
-            <div class="tw-body">✅ $ROBO "Robo Tesla" is LIVE on <span class="m">@${h}</span>
+            <div class="tw-body">✅ $ROBO "Robo Tesla" is LIVE on Long.xyz
 📈 Paired: $TSLA
 📜 CA: 0x7b6c…dc9a
 💰 <span class="m">@degen</span> earns ${pct(fee.share.deployer)} of every trading fee</div>

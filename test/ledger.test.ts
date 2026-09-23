@@ -23,7 +23,7 @@ test("with the protocol's 5% taken first, the deployer still gets 80% of the who
 
 async function launched(fee = 1000n) {
   const d = setup(fee);
-  const res = await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $FEE paired $TSLA", author: author() });
+  const res = await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $FEE paired $TSLA", author: author() });
   if (res.kind !== "live") throw new Error("launch failed");
   const stock = d.long.stockToken("TSLA").toLowerCase();
   const token = res.tokenAddress.toLowerCase();

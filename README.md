@@ -1,7 +1,7 @@
-# LONGSHOT — Launch a token by tagging @longdotxyz
+# LONGSHOT — Launch a Long.xyz token by tagging @longshotpadxyz
 
 > **"One tweet. One token."**
-> Launch a token on [Long.xyz](https://app.long.xyz/) straight from X (Twitter) with a single tweet that tags **@longdotxyz**. No website, no wallet connection needed to launch.
+> Launch a token on [Long.xyz](https://app.long.xyz/) straight from X (Twitter) with a single tweet that tags **@longshotpadxyz**. No website, no wallet connection needed to launch.
 
 ☁️ **Deploying?** Follow the [step-by-step Railway guide](DEPLOY-RAILWAY.md).
 
@@ -11,13 +11,15 @@
 
 Long.xyz is a permissionless launchpad on Robinhood Chain where every token is paired with a **Robinhood Stock Token** or Long.xyz token (72 markets: NVDA, AAPL, TSLA, NVDAx3L, OPENAIx1L, …).
 
-**LONGSHOT** adds a new way in: **launch by tag**. A user tweets:
+**LONGSHOT** adds a new way in: **launch by tag**. A user tweets at LONGSHOT's own account:
 
 ```
-@longdotxyz launch $MOON "Moon Nvidia" paired $NVDA
+@longshotpadxyz launch $MOON "Moon Nvidia" paired $NVDA
 ```
 
 The LONGSHOT bot reads the tweet, launches the token, and replies with the contract address and token link.
+
+Why the trigger is @longshotpadxyz and not @longdotxyz: X only allows automated replies to people who tagged *your* account, and it keeps LONGSHOT clearly separate from the official Long.xyz account.
 
 Why it works:
 - **Viral by default** — every launch is a public tweet plus a bot reply, so distribution starts immediately.
@@ -29,12 +31,12 @@ Why it works:
 ## 2. Command syntax
 
 ```
-@longdotxyz launch $<TICKER> "<Token Name>" [paired $<STOCK>] [+ image]
+@longshotpadxyz launch $<TICKER> "<Token Name>" [paired $<STOCK>] [+ image]
 ```
 
 | Part | Required | Notes |
 |---|---|---|
-| `@longdotxyz` | ✅ | Triggers the bot |
+| `@longshotpadxyz` | ✅ | Triggers the bot (LONGSHOT's own account; set with `TRIGGER_HANDLE`) |
 | `launch` | ✅ | Command keyword (aliases: `deploy`, `long`) |
 | `$TICKER` | ✅ | 2–10 letters/digits |
 | `"Token Name"` | ❌ | Defaults to the ticker |
@@ -44,19 +46,19 @@ Why it works:
 Examples:
 
 ```
-@longdotxyz launch $ROBO "Robo Tesla" paired $TSLA   (+ photo)
-@longdotxyz launch $APPLZ
-@longdotxyz long $CHIP "Micron Degen" paired $MU
+@longshotpadxyz launch $ROBO "Robo Tesla" paired $TSLA   (+ photo)
+@longshotpadxyz launch $APPLZ
+@longshotpadxyz long $CHIP "Micron Degen" paired $MU
 ```
 
-**Launch from a reply:** reply to any tweet with `@longdotxyz launch $TICKER` and the image of the original tweet is used as the logo, with the original tweet stored as the token's origin.
+**Launch from a reply:** reply to any tweet with `@longshotpadxyz launch $TICKER` and the image of the original tweet is used as the logo, with the original tweet stored as the token's origin.
 
 ### Bot replies
 
 Success:
 
 ```
-✅ $ROBO "Robo Tesla" is LIVE on @longdotxyz
+✅ $ROBO "Robo Tesla" is LIVE on Long.xyz
 📈 Paired: $TSLA
 📜 CA: 0x1234…abcd
 🔗 https://app.long.xyz/tokens/0x1234…abcd
@@ -163,7 +165,7 @@ The default `CHAIN_MODE=mock` uses a fake launchpad, so everything works without
 
 | File | Purpose |
 |---|---|
-| `src/parser.ts` | Parses `@longdotxyz launch $TICKER "Name" paired $STOCK` |
+| `src/parser.ts` | Parses `@longshotpadxyz launch $TICKER "Name" paired $STOCK` |
 | `src/validate.ts` | Account checks, rate limit, reserved tickers |
 | `src/stockSymbols.ts` | All Robinhood Stock Token symbols (reserved as tickers) |
 | `src/stocks.ts` | Long.xyz markets by category (72 built in — every app.long.xyz market except ETH), token addresses, `PAIR_MARKETS` / `EXTRA_MARKETS` |
@@ -218,4 +220,4 @@ Long.xyz runs on the **Doppler Protocol** on **Robinhood Chain (chain ID 4663)**
 - **X:** [@longshotpadxyz](https://x.com/longshotpadxyz)
 - **Tagline:** "Take a shot on Long." / "One tweet. One token."
 - **Hashtag:** `#LongShot`
-- **Launch tweet:** "No website needed. Tag @longdotxyz with a $TICKER and your token goes live, paired with a real stock. One tweet. One token. 🟢 #LongShot"
+- **Launch tweet:** "No website needed. Tag @longshotpadxyz with a $TICKER and your token goes live, paired with a real stock. One tweet. One token. 🟢 #LongShot"

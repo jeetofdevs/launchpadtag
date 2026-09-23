@@ -204,7 +204,7 @@ const MARK = readFileSync(new URL("longshot-mark.svg", BRAND_DIR), "utf8").repla
 
 export function layout(title: string, body: Raw, o: LayoutOpts): string {
   const x = `https://x.com/${encodeURIComponent(o.botHandle)}`;
-  const desc = o.description ?? "Launch a token on Long.xyz with one tweet. Tag @longdotxyz, get a stock-paired token, earn 80% of every trading fee.";
+  const desc = o.description ?? "Launch a token on Long.xyz with one tweet. Tag @longshotpadxyz, get a stock-paired token, earn 80% of every trading fee.";
   const auth = o.user
     ? `<a class="btn sm ghost" href="/claim" title="Your rewards">@${esc(o.user.username)}</a>`
     : `<a class="btn sm" href="/login">𝕏 Sign in</a>`;

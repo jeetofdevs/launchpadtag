@@ -3,7 +3,7 @@
  *   tweet → launch → reply → fee harvest → 80/20 ledger → claim payout.
  *
  *   npm run simulate
- *   npm run simulate -- '@longdotxyz launch $MOON "Moon Nvidia" paired $NVDA'
+ *   npm run simulate -- '@longshotpadxyz launch $MOON "Moon Nvidia" paired $NVDA'
  */
 import { formatUnits } from "viem";
 import { handleMention } from "../bot.ts";

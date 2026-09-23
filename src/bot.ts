@@ -94,7 +94,7 @@ export async function handleMention(deps: BotDeps, m: Mention, now = Date.now())
       .reply(
         m.tweetId,
         [
-          `✅ $${cmd.ticker} "${cmd.name}" is LIVE on @${cfg.x.triggerHandle}`,
+          `✅ $${cmd.ticker} "${cmd.name}" is LIVE on Long.xyz`,
           `📈 Paired: $${marketLabel(cmd.stock)}`,
           `📜 CA: ${short(tokenAddress)}`,
           `🔗 ${tokenUrl(cfg, tokenAddress)}`,

@@ -24,8 +24,8 @@ test("home shows platform-wide claimed and unclaimed rewards", async () => {
   const d = setup(1_000_000n); // 1 NVDA (6 decimals) of fees per harvest in the mock
   d.cfg.sessionSecret = "x".repeat(32);
   const { author, nextTweetId } = await import("./helpers.ts");
-  await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $AAA1 paired $NVDA", author: author({ id: "1" }) });
-  await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $BBB1 paired $NVDA", author: author({ id: "2" }) });
+  await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $AAA1 paired $NVDA", author: author({ id: "1" }) });
+  await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $BBB1 paired $NVDA", author: author({ id: "2" }) });
   await harvestFees(d.db, d.long); // each token: 1 NVDA fee → 0.8 NVDA to its deployer
   await claimAll(d.db, d.long, "1", "0x00000000000000000000000000000000000000Aa", 0n);
 
@@ -49,7 +49,7 @@ test("claim page offers Claim & Burn and the POST burns own-token rewards", asyn
   const d = setup(1_000_000n);
   d.cfg.sessionSecret = "s".repeat(32);
   d.cfg.allowDevLogin = true;
-  await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $BRN paired $TSLA", author: author({ id: "1001" }) });
+  await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $BRN paired $TSLA", author: author({ id: "1001" }) });
   await harvestFees(d.db, d.long);
   const app = createApp(d.cfg, d.db, d.long);
 
@@ -73,7 +73,7 @@ test("launches list, token page, and sign-in link", async () => {
   const d = setup();
   d.cfg.sessionSecret = "s".repeat(32);
   const tweetId = nextTweetId();
-  await handleMention(d, { tweetId, text: '@longdotxyz launch $PAGE "Page Token" paired $AAPL', author: author({ username: "pager" }) });
+  await handleMention(d, { tweetId, text: '@longshotpadxyz launch $PAGE "Page Token" paired $AAPL', author: author({ username: "pager" }) });
   const app = createApp(d.cfg, d.db, d.long);
 
   const home = await (await app.request("http://x/")).text();
