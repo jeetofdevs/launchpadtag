@@ -89,7 +89,7 @@ test("launches list, token page, and sign-in link", async () => {
   assert.equal(tok.status, 200);
   const body = await tok.text();
   assert.match(body, /Page Token/);
-  assert.match(body, /Paired with \$AAPL/);
+  assert.match(body, /Paired with <img class="slogo" src="\/logo\/AAPL"[^>]*>\$AAPL/);
   assert.equal((await app.request("http://x/t/123")).status, 404);
 
   const login = await app.request("http://x/login");
@@ -121,4 +121,18 @@ test("/stocks lists the pairable markets", async () => {
   for (const s of STOCKS) assert.ok(body.includes(`<b>$${marketLabel(s)}</b>`), s);
   assert.ok(body.includes("<b>$NVDAx3L</b>"));
   assert.match(await (await createApp(d.cfg, d.db, d.long).request("http://x/stocks?q=tesla")).text(), /\$TSLA/);
+});
+
+test("stock logos: pages show them, letter badge fallback, unknown symbol 404", async () => {
+  const d = setup();
+  d.cfg.sessionSecret = "x".repeat(32);
+  const app = createApp(d.cfg, d.db, d.long);
+  const page = await (await app.request("http://x/stocks")).text();
+  assert.match(page, /<img class="slogo" src="\/logo\/NVDA"/);
+  assert.match(page, /src="\/logo\/NVDAX3L"/);
+  const svg = await app.request("http://x/logo/nvda?letter=1");
+  assert.equal(svg.status, 200);
+  assert.equal(svg.headers.get("content-type"), "image/svg+xml");
+  assert.match(await svg.text(), />NVD</);
+  assert.equal((await app.request("http://x/logo/ZZZZ")).status, 404);
 });

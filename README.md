@@ -175,6 +175,7 @@ The default `CHAIN_MODE=mock` uses a fake launchpad, so everything works without
 | `src/harvester.ts` | Collects fees into the Treasury and books them 80/20 |
 | `src/ledger.ts` | Fee and payout ledger with atomic reservations |
 | `src/claim.ts` | Pays the deployer's 80% |
+| `src/web/logos.ts` | Market logos for `/logo/:symbol` (explorer icon → company logo → letter badge; override with `LOGO_<SYM>=https://…`) |
 | `src/web/server.ts` | Website: home, `/launches`, token pages `/t/:tweetId`, `/claim` (Sign in with X), `/fees`, `/healthz`, token metadata |
 
 ---

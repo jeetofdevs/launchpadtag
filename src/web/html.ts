@@ -125,6 +125,8 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
 .hero2 h1{font-size:clamp(40px,7vw,68px)}
 .hero2 .row{margin:22px 0 10px}
 .chipline{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.slogo{width:22px;height:22px;border-radius:50%;vertical-align:middle;margin-right:8px;background:#0f2a1c;object-fit:cover}
+.chip .slogo{width:16px;height:16px;margin-right:5px}
 .chip{text-decoration:none;display:inline-block;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--muted)}
 @media (max-width:860px){.hero2{grid-template-columns:1fr;gap:24px}}
 .tweet{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;font-size:15px}

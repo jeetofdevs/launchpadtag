@@ -12,6 +12,7 @@ import type { DB } from "../db.ts";
 import { balances, feeReport, recentPayouts, rewardTotals, type RewardTotals } from "../ledger.ts";
 import { buildMetadata } from "../metadata.ts";
 import { html, layout, raw, type Raw } from "./html.ts";
+import { createLogoResolver, letterLogo } from "./logos.ts";
 import { TOKENOMICS, feeSplit, pct } from "../tokenomics.ts";
 
 interface Session {
@@ -79,7 +80,22 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     await next();
   });
 
+  // ── Market logos ──────────────────────────────────────────────────────────
+  const logoOf = createLogoResolver(cfg.chain.explorerUrl, (sym) => cfg.chain.stockTokens[sym as Stock]);
+  app.get("/logo/:sym", async (c) => {
+    const sym = c.req.param("sym").replace(/\.(png|svg)$/i, "").toUpperCase();
+    if (!CATALOG[sym]) return c.notFound();
+    const url = c.req.query("letter") ? null : await logoOf(sym);
+    c.header("Cache-Control", "public, max-age=86400");
+    if (url) return c.redirect(url, 302);
+    c.header("Content-Type", "image/svg+xml");
+    return c.body(letterLogo(sym));
+  });
+
   app.get("/healthz", (c) => c.json({ ok: true, chain: cfg.chain.mode, x: cfg.x.enabled, xLogin: Boolean(cfg.x.oauthClientId && cfg.x.oauthClientSecret), publicUrl: cfg.publicUrl, tickerIndexFresh: tickersFresh() }));
+
+  /** Small round market logo; falls back to the letter badge if the image can't load. */
+  const logo = (sym: string, cls = "slogo") => html`<img class="${cls}" src="/logo/${sym}" alt="" loading="lazy" width="22" height="22" onerror="this.onerror=null;this.src='/logo/${sym}?letter=1'">`;
 
   // ── Landing ────────────────────────────────────────────────────────────────
   app.get("/", async (c) => {
@@ -203,7 +219,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
         <h2>Latest launches <a class="more" href="/launches">View all →</a></h2>
         ${recent.length === 0 ? html`<p class="muted">No tokens yet. Be the first — <a href="${shotUrl}" target="_blank" rel="noopener">take your shot</a>.</p>` : html`
         <div class="scroll"><table><tr><th>Token</th><th>Paired</th><th>Deployer</th><th>CA</th></tr>
-        ${recent.map((r) => html`<tr><td><a href="/t/${r.tweet_id}"><b>$${r.ticker}</b></a> <span class="muted">${r.name}</span></td><td>$${marketLabel(r.stock)}</td>
+        ${recent.map((r) => html`<tr><td><a href="/t/${r.tweet_id}"><b>$${r.ticker}</b></a> <span class="muted">${r.name}</span></td><td class="nowrap">${logo(r.stock)}$${marketLabel(r.stock)}</td>
           <td><a href="https://x.com/${r.x_username}/status/${r.tweet_id}" target="_blank" rel="noopener">@${r.x_username}</a></td>
           <td><a class="mono" href="${tokenUrl(cfg, r.token_address)}" target="_blank" rel="noopener">${shortAddr(r.token_address)}</a></td></tr>`)}
         </table></div>`}
@@ -259,13 +275,13 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       <span class="tag">${STOCKS.length} stocks &amp; ETFs</span>
       <h1>Pick your pair</h1>
       <p class="lead">Every Robinhood Stock Token used on Long.xyz. Add <code>paired $SYMBOL</code> to your tweet — no pair means $${cfg.chain.defaultStock}.</p>
-      <div class="chipline">${POPULAR_STOCKS.map((s) => html`<a class="chip" href="${example(s)}" target="_blank" rel="noopener">$${s}</a>`)}</div>
+      <div class="chipline">${POPULAR_STOCKS.map((s) => html`<a class="chip" href="${example(s)}" target="_blank" rel="noopener">${logo(s)}$${marketLabel(s)}</a>`)}</div>
       <form class="search" method="get" action="/stocks"><input type="search" name="q" value="${q}" placeholder="Search symbol or company" aria-label="Search stocks"><button class="btn" type="submit">Search</button></form>
       ${rows.length === 0 ? html`<p class="muted">No matches.</p>` : groups(rows).map((g) => html`
       <h3>${g.name} <span class="muted small">· ${g.rows.length} market${g.rows.length === 1 ? "" : "s"}</span></h3>
       ${g.description ? html`<p class="muted small" style="margin-top:-6px">${g.description}</p>` : raw("")}
       <div class="scroll"><table><tr><th>Symbol</th><th>Name</th><th>Token</th><th></th></tr>
-      ${g.rows.map((r) => html`<tr><td><b>$${marketLabel(r.symbol)}</b></td><td>${r.name}</td>
+      ${g.rows.map((r) => html`<tr><td class="nowrap">${logo(r.symbol)}<b>$${marketLabel(r.symbol)}</b></td><td>${r.name}</td>
         <td><a class="mono" href="${cfg.chain.explorerUrl}/address/${r.address}" target="_blank" rel="noopener">${shortAddr(r.address)}</a></td>
         <td><a class="btn sm ghost nowrap" href="${example(marketLabel(r.symbol))}" target="_blank" rel="noopener">Launch →</a></td></tr>`)}
       </table></div>`)}
@@ -288,7 +304,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       <form class="search" method="get" action="/launches"><input type="search" name="q" value="${q}" placeholder="Search ticker or @creator" aria-label="Search"><button class="btn" type="submit">Search</button></form>
       ${rows.length === 0 ? html`<p class="muted">${q ? "No matches." : "No tokens yet."}</p>` : html`
       <div class="scroll"><table><tr><th>Token</th><th>Paired</th><th>Creator</th><th>Launched</th><th>CA</th></tr>
-      ${rows.map((r) => html`<tr><td><a href="/t/${r.tweet_id}"><b>$${r.ticker}</b></a> <span class="muted">${r.name}</span></td><td>$${marketLabel(r.stock)}</td>
+      ${rows.map((r) => html`<tr><td><a href="/t/${r.tweet_id}"><b>$${r.ticker}</b></a> <span class="muted">${r.name}</span></td><td class="nowrap">${logo(r.stock)}$${marketLabel(r.stock)}</td>
         <td><a href="https://x.com/${r.x_username}" target="_blank" rel="noopener">@${r.x_username}</a></td>
         <td class="nowrap">${new Date(r.created_at).toISOString().slice(0, 10)}</td>
         <td><a class="mono" href="${tokenUrl(cfg, r.token_address)}" target="_blank" rel="noopener">${shortAddr(r.token_address)}</a></td></tr>`)}
@@ -316,7 +332,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     return c.html(await render(c, `$${l.ticker} · ${l.name} · LONGSHOT`, html`
       <div class="tokhead">
         ${l.image_url?.startsWith("https://") ? html`<img class="av" src="${l.image_url}" alt="" style="object-fit:cover">` : html`<span class="av">${l.ticker.slice(0, 2)}</span>`}
-        <div><span class="tag">Paired with $${marketLabel(l.stock)}</span><h1 style="margin:4px 0 0">$${l.ticker}</h1><div class="muted">${l.name}</div></div>
+        <div><span class="tag">Paired with ${logo(l.stock)}$${marketLabel(l.stock)}</span><h1 style="margin:4px 0 0">$${l.ticker}</h1><div class="muted">${l.name}</div></div>
       </div>
       <div class="row" style="margin-top:18px"><a class="btn" href="${tokenUrl(cfg, l.token_address)}" target="_blank" rel="noopener">Trade on Long.xyz →</a><a class="btn ghost" href="https://x.com/${l.x_username}/status/${l.tweet_id}" target="_blank" rel="noopener">Launch tweet</a></div>
       <div class="kv">
