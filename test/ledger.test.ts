@@ -7,7 +7,7 @@ import { harvestFees } from "../src/harvester.ts";
 import { balances, splitFee } from "../src/ledger.ts";
 import { author, nextTweetId, setup } from "./helpers.ts";
 
-const TO = "0x000000000000000000000000000000000000dEaD";
+const TO = "0x00000000000000000000000000000000000000Aa";
 
 test("split is 80% deployer / 20% treasury, no dust lost", () => {
   assert.deepEqual(splitFee(1000n), { deployer: 800n, treasury: 200n });
@@ -95,4 +95,33 @@ test("other users cannot see or claim someone's fees", async () => {
   await harvestFees(d.db, d.long);
   assert.equal(balances(d.db, "999").length, 0);
   assert.equal((await claimAll(d.db, d.long, "999", TO, 0n)).length, 0);
+});
+
+test("Claim & Burn: own-token rewards go to the burn address, stock rewards to the wallet", async () => {
+  const { BURN_ADDRESS } = await import("../src/config.ts");
+  const { rewardTotals } = await import("../src/ledger.ts");
+  const d = await launched(1000n);
+  await harvestFees(d.db, d.long); // mock: 1000 stock + 10000 token of fees
+  const res = await claimAll(d.db, d.long, "42", TO, 0n, { burn: true });
+  const byAsset = Object.fromEntries(d.long.transfers.map((t) => [t.asset.toLowerCase(), t]));
+  assert.equal(byAsset[d.stock].to, TO);
+  assert.equal(byAsset[d.stock].amount, 800n);
+  assert.equal(byAsset[d.token].to, BURN_ADDRESS);
+  assert.equal(byAsset[d.token].amount, 8000n);
+  assert.ok(res.find((r) => r.asset === d.token)!.burned);
+  assert.ok(!res.find((r) => r.asset === d.stock)!.burned);
+
+  const totals = Object.fromEntries(rewardTotals(d.db).map((t) => [t.asset, t]));
+  assert.equal(totals[d.token].burned, 8000n);
+  assert.equal(totals[d.token].claimed, 0n);
+  assert.equal(totals[d.token].unclaimed, 0n);
+  assert.equal(totals[d.stock].claimed, 800n);
+  assert.equal(totals[d.stock].burned, 0n);
+});
+
+test("a normal claim never burns", async () => {
+  const d = await launched(1000n);
+  await harvestFees(d.db, d.long);
+  await claimAll(d.db, d.long, "42", TO, 0n);
+  assert.ok(d.long.transfers.every((t) => t.to === TO));
 });

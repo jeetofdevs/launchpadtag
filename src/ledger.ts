@@ -1,5 +1,6 @@
 import { BPS, DEPLOYER_SHARE_BPS } from "./config.ts";
 import { tx, type DB } from "./db.ts";
+import { BURN_ADDRESS } from "./config.ts";
 
 /**
  * Split what the Treasury received. The protocol already took `protocolBps` of the fee before it
@@ -146,8 +147,10 @@ export function recentPayouts(db: DB, limit = 50) {
 
 export interface RewardTotals {
   asset: string;
-  /** Paid out to deployers. */
+  /** Paid out to deployers' wallets. */
   claimed: bigint;
+  /** Sent to the burn address via "Claim & Burn". */
+  burned: bigint;
   /** Deployer rewards collected into the Treasury but not yet claimed (in-flight payouts excluded). */
   unclaimed: bigint;
 }
@@ -156,11 +159,19 @@ export interface RewardTotals {
 export function rewardTotals(db: DB): RewardTotals[] {
   const earned = db.prepare("SELECT asset, deployer_share AS v FROM fees").all() as { asset: string; v: string }[];
   const paid = db
-    .prepare("SELECT asset, amount AS v, status FROM payouts WHERE status IN ('pending','sent')")
-    .all() as { asset: string; v: string; status: string }[];
-  const by = new Map<string, { earned: bigint; sent: bigint; pending: bigint }>();
-  const row = (a: string) => by.get(a) ?? by.set(a, { earned: 0n, sent: 0n, pending: 0n }).get(a)!;
+    .prepare("SELECT asset, amount AS v, status, to_address FROM payouts WHERE status IN ('pending','sent')")
+    .all() as { asset: string; v: string; status: string; to_address: string }[];
+  const burn = BURN_ADDRESS.toLowerCase();
+  const by = new Map<string, { earned: bigint; sent: bigint; burned: bigint; pending: bigint }>();
+  const row = (a: string) => by.get(a) ?? by.set(a, { earned: 0n, sent: 0n, burned: 0n, pending: 0n }).get(a)!;
   for (const e of earned) row(e.asset).earned += BigInt(e.v);
-  for (const p of paid) row(p.asset)[p.status === "sent" ? "sent" : "pending"] += BigInt(p.v);
-  return [...by].map(([asset, t]) => ({ asset, claimed: t.sent, unclaimed: t.earned - t.sent - t.pending }));
+  for (const p of paid) {
+    const r = row(p.asset);
+    if (p.status !== "sent") r.pending += BigInt(p.v);
+    else if (p.to_address.toLowerCase() === burn) r.burned += BigInt(p.v);
+    else r.sent += BigInt(p.v);
+  }
+  return [...by].map(([asset, t]) => ({
+    asset, claimed: t.sent, burned: t.burned, unclaimed: t.earned - t.sent - t.burned - t.pending,
+  }));
 }

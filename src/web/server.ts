@@ -6,7 +6,7 @@ import { formatUnits, getAddress, isAddress, zeroAddress, type Address } from "v
 import { tokenUrl } from "../bot.ts";
 import type { LongClient } from "../chain/index.ts";
 import { claimAll } from "../claim.ts";
-import { STOCKS, type Config } from "../config.ts";
+import { BURN_ADDRESS, STOCKS, type Config } from "../config.ts";
 import type { DB } from "../db.ts";
 import { balances, feeReport, recentPayouts, rewardTotals, type RewardTotals } from "../ledger.ts";
 import { buildMetadata } from "../metadata.ts";
@@ -91,6 +91,10 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       return html`${await Promise.all(rows.map(async (t) => html`<b>${await fmt(t.asset, pick(t))}</b>`))}`;
     };
     const claimedHtml = await amounts((t) => t.claimed);
+    const burns = totals.filter((t) => !stockAssets.has(t.asset) && t.burned > 0n).sort((a, b) => (b.burned > a.burned ? 1 : -1));
+    const burnedHtml = burns.length
+      ? html`${await Promise.all(burns.slice(0, 3).map(async (t) => html`<b>${await fmt(t.asset, t.burned)}</b>`))}${burns.length > 3 ? html`<small>+ ${burns.length - 3} more tokens</small>` : raw("")}`
+      : html`<b>0</b>`;
     const unclaimedHtml = await amounts((t) => t.unclaimed);
     const stats = db
       .prepare("SELECT COUNT(*) AS n, COUNT(DISTINCT x_user_id) AS u FROM launches WHERE status = 'live'")
@@ -120,7 +124,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
         <li><b>Tweet it.</b> <code>@${h} launch $TICKER</code>. Optional: <code>"Token Name"</code>, <code>paired $NVDA|AAPL|MSFT|GOOGL|TSLA|MU|SPCX</code>, and a photo for the logo.</li>
         <li><b>It's live.</b> LONGSHOT deploys your token and replies with the contract address — usually within a minute.</li>
         <li><b>Get paid.</b> Every buy and sell pays a trading fee — ${pct(fee.share.deployer)} of it is yours.</li>
-        <li><b>Claim.</b> Open <a href="/claim">/claim</a>, sign in with X, and withdraw to any wallet.</li>
+        <li><b>Claim — or Claim &amp; Burn 🔥.</b> Open <a href="/claim">/claim</a>, sign in with X, and withdraw to any wallet. Choose <i>Claim &amp; Burn</i> to destroy the rewards paid in your own token and shrink its supply.</li>
       </ol>
 
       <h2 id="tokenomics">Tokenomics</h2>
@@ -152,6 +156,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       <div class="rewards-now">
         <div class="rn"><small>Claimed by deployers</small>${claimedHtml}</div>
         <div class="rn"><small>Unclaimed — ready to withdraw</small>${unclaimedHtml}</div>
+        <div class="rn burn"><small>🔥 Burned by deployers</small>${burnedHtml}</div>
       </div>
       ${tokenAssets > 0 ? html`<p class="muted small">Plus rewards paid in ${tokenAssets} launched token${tokenAssets === 1 ? "" : "s"}. Full breakdown on <a href="/fees">Transparency</a>.</p>` : html`<p class="muted small">Live totals across every LONGSHOT token. Full breakdown on <a href="/fees">Transparency</a>.</p>`}
 
@@ -193,7 +198,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       <td class="num">${await fmt(r.asset, r.treasuryShare)}</td></tr>`));
     const prow = await Promise.all(payouts.map(async (p) => html`<tr>
       <td>${new Date(p.created_at).toISOString().slice(0, 16).replace("T", " ")}</td>
-      <td>${p.x_username ? `@${p.x_username}` : "—"}</td>
+      <td>${p.x_username ? `@${p.x_username}` : "—"}${p.to_address.toLowerCase() === BURN_ADDRESS.toLowerCase() ? html` <span class="burn-tag">🔥 burned</span>` : raw("")}</td>
       <td class="num">${await fmt(p.asset, BigInt(p.amount))}</td>
       <td><a class="mono" href="${long.txUrl(p.tx_hash)}">${shortAddr(p.tx_hash)}</a></td></tr>`));
     return c.html(page("Fee transparency · LONGSHOT", html`
@@ -275,6 +280,9 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       <td class="num">${await fmt(b.asset, b.paidOrPending)}</td>
       <td class="num ok"><b>${await fmt(b.asset, b.claimable)}</b></td></tr>`));
     const anyClaimable = bals.some((b) => b.claimable > 0n);
+    const ownTokens = new Set(tokens.map((t) => t.token_address.toLowerCase()));
+    const burnable = bals.filter((b) => b.claimable > 0n && ownTokens.has(b.asset));
+    const burnList = await Promise.all(burnable.map((b) => fmt(b.asset, b.claimable)));
     // Flash lives in a signed cookie (not the URL) so nobody can craft a link with a fake message.
     const flash = await getSignedCookie(c, secret, FLASH);
     if (flash) deleteCookie(c, FLASH, { path: "/claim" });
@@ -291,7 +299,11 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
         <label for="to" class="muted">Receiving wallet (Robinhood Chain / EVM)</label>
         <p><input id="to" type="text" name="to" placeholder="0x…" required pattern="0x[0-9a-fA-F]{40}" autocomplete="off"></p>
         <input type="hidden" name="csrf" value="${csrfFor(s.uid)}">
-        <button class="btn" type="submit">Claim now</button>
+        <div class="row">
+          <button class="btn" type="submit" name="mode" value="claim">Claim all</button>
+          ${burnable.length ? html`<button class="btn burn-btn" type="submit" name="mode" value="burn">Claim &amp; Burn 🔥</button>` : raw("")}
+        </div>
+        ${burnable.length ? html`<p class="muted"><b>Claim &amp; Burn:</b> your stock rewards still go to your wallet, but your rewards paid in your own token (${burnList.join(", ")}) are sent to the burn address <span class="mono nowrap">${shortAddr(BURN_ADDRESS)}</span> and destroyed forever — shrinking your token's supply. This cannot be undone.</p>` : raw("")}
         <p class="muted">Double-check the address — on-chain transfers cannot be reversed.</p>
       </form>` : raw("")}
     `));
@@ -305,9 +317,14 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     const to = String(form.to ?? "").trim();
     if (!isAddress(to) || to.toLowerCase() === zeroAddress) return redirectWithFlash(c, "That wallet address is not valid.");
 
-    const results = await claimAll(db, long, s.uid, getAddress(to), cfg.chain.maxPayoutPerClaim);
+    const burn = String(form.mode ?? "") === "burn";
+    const results = await claimAll(db, long, s.uid, getAddress(to), cfg.chain.maxPayoutPerClaim, { burn });
     const parts = await Promise.all(results.map(async (r) =>
-      r.error ? `${await fmt(r.asset, r.amount)}: ${r.error.slice(0, 160)}` : `✅ ${await fmt(r.asset, r.amount)} sent (${r.txHash!.slice(0, 10)}…)`,
+      r.error
+        ? `${await fmt(r.asset, r.amount)}: ${r.error.slice(0, 160)}`
+        : r.burned
+          ? `🔥 ${await fmt(r.asset, r.amount)} burned (${r.txHash!.slice(0, 10)}…)`
+          : `✅ ${await fmt(r.asset, r.amount)} sent (${r.txHash!.slice(0, 10)}…)`,
     ));
     const msg = parts.length ? parts.join(" · ") : "Nothing to claim.";
     return redirectWithFlash(c, msg);

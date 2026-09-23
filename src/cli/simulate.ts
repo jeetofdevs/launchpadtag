@@ -42,6 +42,6 @@ console.log("");
 for (const b of balances(db, author.id))
   console.log(`fees: total ${await f(b.asset, b.totalFees)} → deployer ${await f(b.asset, b.deployerShare)} / treasury ${await f(b.asset, b.treasuryShare)}`);
 
-for (const p of await claimAll(db, long, author.id, "0x000000000000000000000000000000000000dEaD", 0n))
+for (const p of await claimAll(db, long, author.id, "0x00000000000000000000000000000000000000Aa", 0n))
   console.log(`claim: sent ${await f(p.asset, p.amount)} to deployer (tx ${p.txHash?.slice(0, 18)}…)`);
 for (const b of balances(db, author.id)) console.log(`claimable after claim: ${await f(b.asset, b.claimable)}`);

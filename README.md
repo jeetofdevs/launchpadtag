@@ -106,6 +106,15 @@ All launches and fee collection run from one operator wallet, the **LONGSHOT Tre
 3. **Book** — every fee is recorded per token and per **X account ID** of the deployer (ID, not username, so renames are safe).
 4. **Claim** — the deployer opens `/claim`, signs in with X, enters a wallet, and the Treasury pays out the deployer's **80% of every trading fee**. LONGSHOT keeps 20% (which already includes the protocol's 5%) for gas, servers and the X API.
 
+### Claim & Burn 🔥
+
+On `/claim` deployers choose between:
+
+- **Claim all** — every reward (paired stock and their own token) goes to their wallet.
+- **Claim & Burn** — paired-stock rewards go to their wallet, while rewards paid in **their own token** are sent to the burn address `0x000000000000000000000000000000000000dEaD` and destroyed forever, shrinking the token's supply.
+
+Burns are recorded like any payout, labelled 🔥 on `/fees`, and the home page shows the running "Burned by deployers" total next to claimed and unclaimed rewards.
+
 Pools pay fees in **both** pool assets — the Stock Token and the launched token — and both are split 80/20. Because the protocol's 5% is taken before fees reach the Treasury, the ledger credits the deployer 80/95 of what the Treasury receives, which is exactly 80% of the whole fee.
 
 ### Transparency

@@ -21,8 +21,8 @@ export function html(strings: TemplateStringsArray, ...values: unknown[]): Raw {
 }
 
 const CSS = `
-:root{--bg:#0b0d0c;--panel:#141816;--line:#232a26;--text:#e9f1ec;--muted:#8a978f;--accent:#35f28a;--accent-ink:#04200f;--accent-2:#1f8f53;--accent-3:#4b5a52;--danger:#ff6b6b;--warn:#ffc857}
-@media (prefers-color-scheme: light){:root{--bg:#f6f8f7;--panel:#ffffff;--line:#dfe6e2;--text:#0e1511;--muted:#5d6b63;--accent:#0fae57;--accent-ink:#ffffff;--accent-2:#7fd6a6;--accent-3:#b7c4bc;--danger:#c62828;--warn:#9a6700}}
+:root{--bg:#0b0d0c;--panel:#141816;--line:#232a26;--text:#e9f1ec;--muted:#8a978f;--accent:#35f28a;--accent-ink:#04200f;--accent-2:#1f8f53;--accent-3:#4b5a52;--burn:#ff7a3d;--burn-ink:#1c0a00;--danger:#ff6b6b;--warn:#ffc857}
+@media (prefers-color-scheme: light){:root{--bg:#f6f8f7;--panel:#ffffff;--line:#dfe6e2;--text:#0e1511;--muted:#5d6b63;--accent:#0fae57;--accent-ink:#ffffff;--accent-2:#7fd6a6;--accent-3:#b7c4bc;--burn:#c2410c;--burn-ink:#ffffff;--danger:#c62828;--warn:#9a6700}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 a{color:var(--accent)}
@@ -74,12 +74,17 @@ h3{font-size:16px;margin:24px 0 10px}
 .reward-big{display:flex;gap:14px;align-items:center;margin-bottom:12px}
 .reward-big b{font-size:clamp(40px,9vw,64px);line-height:1;color:var(--accent);letter-spacing:-.03em}
 .reward-big span{font-size:17px}
-.rewards-now{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rewards-now{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .rn{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
 .rn small{display:block;color:var(--muted);margin-bottom:6px}
 .rn b{display:block;font-size:24px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-.rn:last-child b{color:var(--accent)}
-@media (max-width:560px){.rewards-now{grid-template-columns:1fr}}
+.rn:nth-child(2) b{color:var(--accent)}
+.rn.burn b{color:var(--burn)}
+.rn small + small, .rn b + small{margin-top:4px}
+.nowrap{white-space:nowrap;word-break:normal}
+.burn-tag{font-size:12px;color:var(--burn);white-space:nowrap}
+.btn.burn-btn{background:var(--burn);color:var(--burn-ink)}
+@media (max-width:760px){.rewards-now{grid-template-columns:1fr}}
 .small{font-size:12px}
 .seg{display:block;min-width:4px}
 .s1{background:var(--accent)}.s2{background:var(--accent-2)}.s3{background:var(--accent-3)}

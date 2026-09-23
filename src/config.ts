@@ -17,6 +17,9 @@ export const DEFAULT_STOCK_TOKENS: Record<Stock, Address> = {
   SPCX: "0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa",
 };
 
+/** Tokens sent here are gone forever ("Claim & Burn"). */
+export const BURN_ADDRESS = "0x000000000000000000000000000000000000dEaD" as const;
+
 /** Every LONGSHOT token: fixed supply, 100% sold through the fair-launch curve (no team, no presale). */
 export const TOKEN_SUPPLY = 1_000_000_000n;
 

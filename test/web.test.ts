@@ -27,7 +27,7 @@ test("home shows platform-wide claimed and unclaimed rewards", async () => {
   await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $AAA1 paired $NVDA", author: author({ id: "1" }) });
   await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $BBB1 paired $NVDA", author: author({ id: "2" }) });
   await harvestFees(d.db, d.long); // each token: 1 NVDA fee → 0.8 NVDA to its deployer
-  await claimAll(d.db, d.long, "1", "0x000000000000000000000000000000000000dEaD", 0n);
+  await claimAll(d.db, d.long, "1", "0x00000000000000000000000000000000000000Aa", 0n);
 
   const nvda = d.long.stockToken("NVDA").toLowerCase();
   const t = rewardTotals(d.db).find((r) => r.asset === nvda)!;
@@ -39,4 +39,29 @@ test("home shows platform-wide claimed and unclaimed rewards", async () => {
   assert.match(body, /Unclaimed — ready to withdraw<\/small><b>0\.8 NVDA<\/b>/);
   assert.match(body, /Plus rewards paid in 2 launched tokens/);
   assert.doesNotMatch(body, /per day|\/ month|\/ year/);
+});
+
+test("claim page offers Claim & Burn and the POST burns own-token rewards", async () => {
+  const { handleMention } = await import("../src/bot.ts");
+  const { harvestFees } = await import("../src/harvester.ts");
+  const { author, nextTweetId } = await import("./helpers.ts");
+  const { createHmac } = await import("node:crypto");
+  const d = setup(1_000_000n);
+  d.cfg.sessionSecret = "s".repeat(32);
+  d.cfg.allowDevLogin = true;
+  await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $BRN paired $TSLA", author: author({ id: "1001" }) });
+  await harvestFees(d.db, d.long);
+  const app = createApp(d.cfg, d.db, d.long);
+
+  const login = await app.request("http://x/auth/dev?uid=1001&username=degen");
+  const cookie = (login.headers.getSetCookie?.() ?? [login.headers.get("set-cookie")!]).map((c) => c.split(";")[0]).join("; ");
+  const page = await (await app.request("http://x/claim", { headers: { cookie } })).text();
+  assert.match(page, /Claim &amp; Burn 🔥/);
+
+  const csrf = createHmac("sha256", d.cfg.sessionSecret).update("csrf:1001").digest("hex");
+  const body = new URLSearchParams({ to: "0x00000000000000000000000000000000000000aa", csrf, mode: "burn" });
+  const r = await app.request("http://x/claim", { method: "POST", headers: { cookie, "content-type": "application/x-www-form-urlencoded" }, body });
+  assert.equal(r.status, 302);
+  const burned = d.long.transfers.filter((t) => t.to.toLowerCase() === "0x000000000000000000000000000000000000dead");
+  assert.equal(burned.length, 1);
 });
