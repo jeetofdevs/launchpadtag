@@ -53,3 +53,9 @@ test("EXTRA_MARKETS adds ERC-20 markets by address", async () => {
     if (saved === undefined) delete process.env.EXTRA_MARKETS; else process.env.EXTRA_MARKETS = saved;
   }
 });
+
+test("Long.xyz tokens can be paired, case-insensitively", () => {
+  assert.equal(p("@longdotxyz launch $ABC paired $NVDAx3L")?.stock, "NVDAX3L");
+  assert.equal(p("@longdotxyz launch $ABC paired $openaix1l")?.stock, "OPENAIX1L");
+  assert.equal(p("@longdotxyz launch $ABC paired $AI")?.stock, "AI");
+});

@@ -203,6 +203,17 @@ export const STOCK_TOKENS = {
   "ZS": { name: "Zscaler", address: "0x7dc013eB55e436f30d7ED1AFE4E36d6e45e3c3f7" },
 } as const satisfies Record<string, { name: string; address: Address }>;
 
+/**
+ * Long.xyz's own tokens offered as pairs on app.long.xyz (addresses provided by the operator).
+ * `label` keeps Long.xyz's casing for display; the key is what tweets are matched against (case-insensitive).
+ */
+export const LONG_TOKENS: Record<string, { name: string; address: Address; label: string }> = {
+  AI: { name: "ArtificialINU", address: "0x2e8c31162b855a2ffa90f6f8634643ad6f111e18", label: "AI" },
+  NVDAX3L: { name: "NVDA 3x Long", address: "0xf51fb54de60f6e16252e852a5ed0e60b8307606a", label: "NVDAx3L" },
+  ANTHROPICX1L: { name: "ANTHROPIC", address: "0x1937cad42b17d43bb2b347ce16d5288887c46c33", label: "ANTHROPICx1L" },
+  OPENAIX1L: { name: "OPENAI", address: "0xfe09fb328be1c286b4f597ed34764b7472ae72c5", label: "OPENAIx1L" },
+};
+
 /** A pairable market symbol (upper-case), e.g. "NVDA" or an EXTRA_MARKETS entry like "NVDAX3L". */
 export type Stock = string;
 
@@ -225,7 +236,10 @@ export function extraMarkets(): Record<string, { name: string; address: Address 
 }
 
 /** Every market we know a token address for: Robinhood Stock Tokens + USDG + EXTRA_MARKETS. */
-export const CATALOG: Record<string, { name: string; address: Address }> = { ...STOCK_TOKENS, ...extraMarkets() };
+export const CATALOG: Record<string, { name: string; address: Address; label?: string }> = { ...STOCK_TOKENS, ...LONG_TOKENS, ...extraMarkets() };
+
+/** Display form of a market symbol, e.g. "NVDAx3L". */
+export const marketLabel = (s: string) => CATALOG[s]?.label ?? s;
 
 /** Every Robinhood Stock Token we know an address for (name/address lookup only). */
 export const ALL_STOCK_SYMBOLS = Object.keys(CATALOG);
@@ -258,6 +272,7 @@ export const LONG_MARKET_CATEGORIES: MarketCategory[] = [
   { name: "Commodities", description: "Oil, silver, energy and rare-earth materials.", symbols: ["BE", "USAR", "USO", "SLV", "RUN"] },
   { name: "ETFs", description: "Broad-market, sector and asset-backed index funds.", symbols: ["SPY", "QQQ", "GLD", "SGOV", "XLK"] },
   { name: "Media & Entertainment", description: "Streaming, social, gaming and media.", symbols: ["NFLX", "RDDT", "SNAP", "RBLX", "TTWO", "AMC", "DJT"] },
+  { name: "Long.xyz tokens", description: "Long.xyz's own markets — leveraged and pre-IPO exposure, plus $AI.", symbols: ["AI", "NVDAX3L", "ANTHROPICX1L", "OPENAIX1L"] },
   { name: "Dollar", description: "Pair with a US-dollar stablecoin.", symbols: ["USDG"] },
 ];
 

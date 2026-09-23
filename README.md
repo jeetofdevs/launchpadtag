@@ -9,7 +9,7 @@
 
 ## 1. The idea
 
-Long.xyz is a permissionless launchpad on Robinhood Chain where every token is paired with a **Robinhood Stock Token** (NVDA, AAPL, MSFT, GOOGL, TSLA, MU, SPCX).
+Long.xyz is a permissionless launchpad on Robinhood Chain where every token is paired with a **Robinhood Stock Token** or Long.xyz token (72 markets: NVDA, AAPL, TSLA, NVDAx3L, OPENAIx1L, …).
 
 **LONGSHOT** adds a new way in: **launch by tag**. A user tweets:
 
@@ -166,7 +166,7 @@ The default `CHAIN_MODE=mock` uses a fake launchpad, so everything works without
 | `src/parser.ts` | Parses `@longdotxyz launch $TICKER "Name" paired $STOCK` |
 | `src/validate.ts` | Account checks, rate limit, reserved tickers |
 | `src/stockSymbols.ts` | All Robinhood Stock Token symbols (reserved as tickers) |
-| `src/stocks.ts` | Long.xyz markets by category (68 built in), token addresses, `PAIR_MARKETS` / `EXTRA_MARKETS` |
+| `src/stocks.ts` | Long.xyz markets by category (72 built in — every app.long.xyz market except ETH), token addresses, `PAIR_MARKETS` / `EXTRA_MARKETS` |
 | `src/chain/tickers.ts` | Indexes Long.xyz launches to know which tickers are taken |
 | `src/bot.ts` | Handles one tweet: validate → metadata → launch → reply |
 | `src/x/client.ts` | X API: search for tags, reply from the bot account |

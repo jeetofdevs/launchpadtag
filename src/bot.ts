@@ -3,6 +3,7 @@ import type { LongClient } from "./chain/index.ts";
 import type { DB } from "./db.ts";
 import { buildMetadata, publishMetadata } from "./metadata.ts";
 import { feeSplit, pct } from "./tokenomics.ts";
+import { marketLabel } from "./stocks.ts";
 import { parseLaunch } from "./parser.ts";
 import { validateLaunch, type Author } from "./validate.ts";
 
@@ -94,7 +95,7 @@ export async function handleMention(deps: BotDeps, m: Mention, now = Date.now())
         m.tweetId,
         [
           `✅ $${cmd.ticker} "${cmd.name}" is LIVE on @${cfg.x.triggerHandle}`,
-          `📈 Paired: $${cmd.stock}`,
+          `📈 Paired: $${marketLabel(cmd.stock)}`,
           `📜 CA: ${short(tokenAddress)}`,
           `🔗 ${tokenUrl(cfg, tokenAddress)}`,
           `💰 @${m.author.username} earns ${pct(feeSplit(cfg.chain).share.deployer)} of every trading fee — claim: ${cfg.publicUrl}/claim`,
