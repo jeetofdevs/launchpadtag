@@ -386,7 +386,9 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
         ${l.image_url?.startsWith("https://") ? html`<img class="av" src="${l.image_url}" alt="" style="object-fit:cover">` : html`<span class="av">${l.ticker.slice(0, 2)}</span>`}
         <div><span class="tag">Paired with ${logo(l.stock)}$${marketLabel(l.stock)}</span><h1 style="margin:4px 0 0">$${l.ticker}</h1><div class="muted">${l.name}</div>${l.fee_username ? html`<div class="feesto">🎁 Creator fees go to <a href="https://x.com/${l.fee_username}" target="_blank" rel="noopener">@${l.fee_username}</a></div>` : raw("")}</div>
       </div>
-      <div class="row" style="margin-top:18px"><a class="btn" href="${tokenUrl(cfg, l.token_address)}" target="_blank" rel="noopener">Trade on Long.xyz →</a><a class="btn ghost" href="https://x.com/${l.x_username}/status/${l.tweet_id}" target="_blank" rel="noopener">Launch tweet</a></div>
+      <div class="row" style="margin-top:18px">${cfg.chain.launchVia === "long"
+        ? html`<a class="btn" href="${tokenUrl(cfg, l.token_address)}" target="_blank" rel="noopener">Trade on Long.xyz →</a>`
+        : html`<a class="btn" href="${long.addressUrl(l.token_address)}" target="_blank" rel="noopener">View token on explorer →</a>`}<a class="btn ghost" href="https://x.com/${l.x_username}/status/${l.tweet_id}" target="_blank" rel="noopener">Launch tweet</a></div>
       <div class="kv">
         <div><small>Creator</small><a href="https://x.com/${l.x_username}" target="_blank" rel="noopener">@${l.x_username}</a></div>
         ${l.fee_username ? html`<div><small>🎁 Fees go to</small><a href="https://x.com/${l.fee_username}" target="_blank" rel="noopener">@${l.fee_username}</a></div>` : raw("")}

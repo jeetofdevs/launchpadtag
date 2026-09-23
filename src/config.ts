@@ -152,10 +152,11 @@ export function loadConfig() {
       longLauncher: env("LONG_LAUNCHER_ADDRESS", "0x22e99278308B393ea1260859B181AD7E78f5eeED") as Address,
       longStartBlock: BigInt(process.env.LONG_START_BLOCK ?? "8636038"),
       /**
-       * "long" (default): launch through Long.xyz's launcher so tokens are listed on app.long.xyz.
-       * "doppler": launch straight on Doppler (tradable on Uniswap v4, not listed on Long.xyz).
+       * "doppler" (default): launch straight on Doppler, tradable on Uniswap v4 (not listed on app.long.xyz).
+       * "long": launch through Long.xyz's launcher so tokens are listed on app.long.xyz. Off for now:
+       * app.long.xyz moved to a new launcher contract whose format isn't known yet.
        */
-      launchVia: (process.env.LAUNCH_VIA === "doppler" ? "doppler" : "long") as "long" | "doppler",
+      launchVia: (process.env.LAUNCH_VIA === "long" ? "long" : "doppler") as "long" | "doppler",
       /** A real app.long.xyz launch whose create() call is reused as the template for every launch. */
       longTemplateTx: env("LONG_TEMPLATE_TX", "0xf2b83f462671397a3d8b77b65f42ec71e5b6fb2ceacbaff79a34fba6d36ca09d") as Hex,
       /** Creation-code hash of Long.xyz tokens; only used after it reproduces the template's token address. */
