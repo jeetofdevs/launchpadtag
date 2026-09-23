@@ -94,11 +94,19 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
 
   // ── Market logos ──────────────────────────────────────────────────────────
   const logoOf = createLogoResolver(cfg.chain.explorerUrl, (sym) => cfg.chain.stockTokens[sym as Stock]);
+  /** Market logos shipped in brand/markets/ (for markets without a public logo). */
+  const LOCAL_MARKET_LOGOS: Record<string, string> = { AI: "ai.jpg" };
   app.get("/logo/:sym", async (c) => {
     const sym = c.req.param("sym").replace(/\.(png|svg)$/i, "").toUpperCase();
     if (!CATALOG[sym]) return c.notFound();
-    const url = c.req.query("letter") ? null : await logoOf(sym);
     c.header("Cache-Control", "public, max-age=86400");
+    // Logos we ship ourselves (brand/markets/<sym>.jpg|png) win over any looked-up one.
+    const own = LOCAL_MARKET_LOGOS[sym];
+    if (own && !c.req.query("letter")) {
+      c.header("Content-Type", own.endsWith(".png") ? "image/png" : "image/jpeg");
+      return c.body(await readFile(new URL(`../../brand/markets/${own}`, import.meta.url)));
+    }
+    const url = c.req.query("letter") ? null : await logoOf(sym);
     if (url) return c.redirect(url, 302);
     c.header("Content-Type", "image/svg+xml");
     return c.body(letterLogo(sym));

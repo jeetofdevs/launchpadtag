@@ -195,3 +195,12 @@ test("Railway: the database is moved onto the Volume and flagged when there is n
     process.env = saved;
   }
 });
+
+test("$AI uses its own shipped logo", async () => {
+  const d = setup();
+  d.cfg.sessionSecret = "x".repeat(32);
+  const r = await createApp(d.cfg, d.db, d.long).request("http://x/logo/AI");
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get("content-type"), "image/jpeg");
+  assert.ok((await r.arrayBuffer()).byteLength > 1000);
+});
