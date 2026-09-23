@@ -121,9 +121,9 @@ export function loadConfig() {
       launchesPerDay: int("LAUNCHES_PER_DAY", 1),
       /**
        * A ticker launched in the last N hours (via LONGSHOT or on Long.xyz) is reserved.
-       * 0 (default) = reserved forever, matching what app.long.xyz shows for already-deployed tickers.
+       * Default 72: Long.xyz frees a ticker again after 2–3 days. 0 = reserved forever.
        */
-      tickerCooldownHours: int("TICKER_COOLDOWN_HOURS", 0),
+      tickerCooldownHours: int("TICKER_COOLDOWN_HOURS", 72),
       /** "Send fees" (`fees @user` in the launch tweet). Coming soon — off unless SEND_FEES_ENABLED=true. */
       sendFeesEnabled: flag("SEND_FEES_ENABLED"),
     },

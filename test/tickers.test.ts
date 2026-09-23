@@ -21,8 +21,9 @@ test("ticker already launched on Long.xyz is reserved (case-insensitive) and the
   assert.equal(d.replier.sent[0].text, "❌ $SI reserved. Try again using another ticker.");
 });
 
-test("by default a ticker stays reserved forever", async () => {
+test("with TICKER_COOLDOWN_HOURS=0 a ticker stays reserved forever", async () => {
   const d = setup();
+  d.cfg.rules.tickerCooldownHours = 0;
   external(d, "MOON", 400 * DAY);
   const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $MOON", author: author() });
   assert.equal(r.kind, "rejected");
@@ -115,7 +116,8 @@ test("first sync only scans the reservation window, never before the launcher ex
 });
 
 test("reserved-forever mode backfills the whole launcher history", async () => {
-  const d = setup(); // default: TICKER_COOLDOWN_HOURS=0
+  const d = setup();
+  d.cfg.rules.tickerCooldownHours = 0;
   d.cfg.chain.longStartBlock = 1_000_000n;
   const chain = fakeChain([
     { block: 1_000_500n, asset: `0x${"b1".repeat(20)}`, symbol: "ANCIENT" }, // ~11.5 days ago
@@ -134,4 +136,32 @@ test("concurrent sync calls share one run", async () => {
   const [a, b] = await Promise.all([idx.sync(), idx.sync()]);
   assert.equal(a, 1);
   assert.equal(b, 1); // same promise, not a second scan
+});
+
+test("switching to a 3-day window skips the rest of an unfinished full backfill", async () => {
+  const { setKv } = await import("../src/db.ts");
+  const d = setup();
+  d.cfg.rules.tickerCooldownHours = 72;
+  d.cfg.chain.longStartBlock = 1_000_000n;
+  setKv(d.db, "long_ticker_cursor", "1_100_000".replaceAll("_", "")); // full backfill stopped part-way
+  const chain = fakeChain([
+    { block: 1_200_000n, asset: `0x${"c1".repeat(20)}`, symbol: "OLDIE" },  // ~9 days ago: outside window
+    { block: 1_900_000n, asset: `0x${"c2".repeat(20)}`, symbol: "NEWIE" },  // ~28 hours ago: inside
+  ]);
+  const idx = new LongTickerIndexer(d.cfg.chain, d.cfg.rules, d.db, () => {}, chain.client);
+  assert.equal(await idx.sync(), 1);
+  assert.ok(chain.calls() < 40, `scanned only the window (${chain.calls()} RPC calls)`);
+  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $NEWIE", author: author({ id: "n1" }) })).kind, "rejected");
+  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $OLDIE", author: author({ id: "n2" }) })).kind, "live");
+});
+
+test("by default a ticker is reserved for 3 days, then free again", async () => {
+  const { recordExternalLaunch } = await import("../src/chain/tickers.ts");
+  const d = setup();
+  assert.equal(d.cfg.rules.tickerCooldownHours, 72);
+  const now = Date.now();
+  recordExternalLaunch(d.db, { asset: `0x${"d1".repeat(20)}`, symbol: "TWODAY", numeraire: TSLA, block: 1n, launchedAt: now - 2 * DAY });
+  recordExternalLaunch(d.db, { asset: `0x${"d2".repeat(20)}`, symbol: "FOURDAY", numeraire: TSLA, block: 1n, launchedAt: now - 4 * DAY });
+  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $TWODAY", author: author({ id: "t1" }) }, now)).kind, "rejected");
+  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $FOURDAY", author: author({ id: "t2" }) }, now)).kind, "live");
 });

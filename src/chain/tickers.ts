@@ -99,6 +99,12 @@ export class LongTickerIndexer {
     const { secsPerBlock, timeOf } = await this.clock(head);
     const cursor = getKv(this.db, CURSOR_KEY);
     let from = cursor ? BigInt(cursor) + 1n : this.initialBlock(head, secsPerBlock);
+    // With a reservation window (TICKER_COOLDOWN_HOURS > 0), older launches can't reserve anything,
+    // so never crawl blocks before the window, even if an earlier full backfill stopped part-way.
+    if (this.rules.tickerCooldownHours > 0) {
+      const windowStart = this.initialBlock(head, secsPerBlock);
+      if (from < windowStart) from = windowStart;
+    }
     let chunk = MAX_CHUNK;
     let added = 0;
     const backfill = head - from > 100n * MAX_CHUNK;

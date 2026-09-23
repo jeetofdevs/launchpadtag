@@ -140,10 +140,10 @@ Pools pay fees in **both** pool assets — the Stock Token and the launched toke
 
 - **Account requirements:** at least 30 days old and 50 followers; protected accounts can't launch.
 - **Rate limit:** 1 launch per account per 24 hours.
-- **Reserved tickers (same rule as Long.xyz):** a ticker that has **ever** been launched — via LONGSHOT or directly on app.long.xyz — is refused with *"❌ $TICKER reserved. Try again using another ticker."* All 196 Robinhood stock symbols (AMZN, META, PLTR, …) are reserved too.
+- **Reserved tickers (same rule as Long.xyz):** a ticker launched in the **last 3 days** — via LONGSHOT or directly on app.long.xyz — is refused with *"❌ $TICKER reserved. Try again using another ticker."* All 196 Robinhood stock symbols (AMZN, META, PLTR, …) are reserved too.
   - The bot indexes every `LaunchCreated` event from the Long.xyz launcher contract and reads each token's `symbol()`.
   - Before handling tweets it syncs to the latest block; if that fails, tweets are deferred to the next round and nothing is launched.
-  - `TICKER_COOLDOWN_HOURS=0` (default) reserves forever; set e.g. `24` if Long.xyz releases tickers after a day.
+  - `TICKER_COOLDOWN_HOURS=72` (default): Long.xyz frees a ticker after 2–3 days. Only that window is indexed, so the first start takes seconds. `0` reserves forever (indexes the full history).
 - **Idempotent:** one tweet ID can produce at most one token.
 - **Safety:** the bot never DMs first and never asks for seed phrases or private keys.
 
