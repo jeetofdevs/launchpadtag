@@ -51,6 +51,17 @@ CREATE TABLE IF NOT EXISTS payouts (
 );
 CREATE INDEX IF NOT EXISTS payouts_user ON payouts(x_user_id, asset);
 
+-- Launches made outside LONGSHOT (e.g. on app.long.xyz), indexed from LongLauncher.LaunchCreated,
+-- so we respect Long.xyz's ticker reservations.
+CREATE TABLE IF NOT EXISTS external_launches (
+  asset       TEXT PRIMARY KEY,
+  symbol      TEXT NOT NULL,          -- upper-cased
+  numeraire   TEXT NOT NULL,
+  block       INTEGER NOT NULL,
+  launched_at INTEGER NOT NULL        -- ms
+);
+CREATE INDEX IF NOT EXISTS external_launches_symbol ON external_launches(symbol, launched_at);
+
 CREATE TABLE IF NOT EXISTS kv (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL

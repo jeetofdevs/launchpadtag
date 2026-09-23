@@ -65,6 +65,7 @@ export function loadConfig() {
       minAccountAgeDays: int("MIN_ACCOUNT_AGE_DAYS", 30),
       minFollowers: int("MIN_FOLLOWERS", 50),
       launchesPerDay: int("LAUNCHES_PER_DAY", 1),
+      /** A ticker used in the last N hours (by LONGSHOT or on Long.xyz) can't be reused. 0 = never reusable. */
       tickerCooldownHours: int("TICKER_COOLDOWN_HOURS", 24),
     },
 
@@ -82,6 +83,10 @@ export function loadConfig() {
       /** Share of pool fees routed to the Doppler protocol owner (min 5%); the rest goes to the Treasury. */
       protocolShareBps: BigInt(process.env.PROTOCOL_SHARE_BPS ?? "500"),
       harvestIntervalMs: int("HARVEST_INTERVAL_MS", 15 * 60_000),
+      /** Long.xyz launcher; its LaunchCreated events tell us which tickers are taken. */
+      longLauncher: env("LONG_LAUNCHER_ADDRESS", "0x22e99278308B393ea1260859B181AD7E78f5eeED") as Address,
+      longStartBlock: BigInt(process.env.LONG_START_BLOCK ?? "8636038"),
+      tickerSyncIntervalMs: int("TICKER_SYNC_INTERVAL_MS", 60_000),
       /** Refuse any single claim payout above this (base units, 0 = no cap). */
       maxPayoutPerClaim: BigInt(process.env.MAX_PAYOUT_PER_CLAIM ?? "0"),
     },

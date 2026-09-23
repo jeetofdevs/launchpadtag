@@ -129,7 +129,7 @@ Karena fee ditahan dulu di wallet operator, user perlu bisa memverifikasi bahwa 
 - **Syarat akun:** umur akun ≥ 30 hari, followers ≥ 50, bukan akun suspended/bot.
 - **Rate limit:** maksimal 1 launch / akun / 24 jam (bisa naik untuk akun verified).
 - **Ticker filter:** tolak ticker yang sama persis dengan stock asli (`$NVDA`, `$TSLA`, dst.), nama brand besar, dan kata kasar/penipuan.
-- **Duplikat:** kalau ticker sudah dipakai dalam 24 jam terakhir, bot balas dengan link token yang sudah ada.
+- **Reservasi ticker (ikut aturan Long.xyz):** ticker yang sudah dipakai dalam 24 jam terakhir, **baik lewat LONGSHOT maupun langsung di app.long.xyz**, ditolak, dan bot membalas dengan link token yang sudah ada. Bot membaca setiap event `LaunchCreated` di kontrak LongLauncher (`src/chain/tickers.ts`), lalu mengambil ticker dari `symbol()` token-nya. Sebelum memproses tweet, bot selalu menyamakan data dengan blok terbaru. Kalau pengecekan gagal (misalnya RPC bermasalah), tweet ditunda ke putaran berikutnya dan tidak ada token yang dibuat. Lama reservasi diatur lewat `TICKER_COOLDOWN_HOURS`; isi `0` supaya sebuah ticker tidak pernah bisa dipakai ulang.
 - **Gas sponsor dibatasi:** bot menanggung gas launch dari treasury; kalau treasury tipis, antrean diprioritaskan untuk akun dengan reputasi lebih tinggi.
 - **Tidak ada private key di user:** user tidak pernah diminta seed/private key lewat DM. Bot **tidak pernah** DM duluan (edukasi anti-scam di bio bot).
 - **Idempotent:** satu tweet ID = maksimal satu token (disimpan di DB), jadi retry/duplikat event tidak bikin token dobel.
@@ -210,7 +210,8 @@ Mode default `CHAIN_MODE=mock` memakai Long.xyz tiruan, jadi semuanya bisa dicob
 | File | Isi |
 |---|---|
 | `src/parser.ts` | Parse `@longdotxyz launch $TICKER "Nama" paired $STOCK` |
-| `src/validate.ts` | Anti-spam: umur akun, followers, rate limit, blacklist ticker, cooldown ticker |
+| `src/validate.ts` | Anti-spam: umur akun, followers, rate limit, blacklist ticker, reservasi ticker |
+| `src/chain/tickers.ts` | Indexer ticker Long.xyz dari event `LaunchCreated` di LongLauncher |
 | `src/bot.ts` | Pipeline satu tweet: validasi → metadata → deploy → reply (idempotent per tweet ID) |
 | `src/x/client.ts` | X API: recent search untuk tag, reply dari akun bot |
 | `src/chain/onchain.ts` | Transaksi dari **LONGSHOT Treasury** via Doppler SDK: deploy multicurve, klaim fee beneficiary, transfer ERC-20 |

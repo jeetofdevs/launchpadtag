@@ -21,7 +21,7 @@ const SESSION = "ls_session";
 const OAUTH = "ls_oauth";
 const FLASH = "ls_flash";
 
-export function createApp(cfg: Config, db: DB, long: LongClient) {
+export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: () => boolean = () => true) {
   const app = new Hono();
   const secret = cfg.sessionSecret;
   const secureCookie = cfg.publicUrl.startsWith("https://");
@@ -62,7 +62,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient) {
 
   const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
-  app.get("/healthz", (c) => c.json({ ok: true, chain: cfg.chain.mode, x: cfg.x.enabled }));
+  app.get("/healthz", (c) => c.json({ ok: true, chain: cfg.chain.mode, x: cfg.x.enabled, tickerIndexFresh: tickersFresh() }));
 
   // ── Landing ────────────────────────────────────────────────────────────────
   app.get("/", (c) => {

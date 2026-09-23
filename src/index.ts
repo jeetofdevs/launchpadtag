@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 import { handleMention, type Replier } from "./bot.ts";
 import { createLongClient } from "./chain/index.ts";
+import { LongTickerIndexer } from "./chain/tickers.ts";
 import { loadConfig } from "./config.ts";
 import { openDb } from "./db.ts";
 import { harvestFees } from "./harvester.ts";
@@ -31,11 +32,19 @@ function every(ms: number, name: string, fn: () => Promise<unknown>) {
   void tick();
 }
 
+// Know every ticker Long.xyz has handed out, so we respect its reservations.
+const tickers = cfg.chain.mode === "onchain" ? new LongTickerIndexer(cfg.chain, cfg.rules, db, log) : null;
+if (tickers) every(cfg.chain.tickerSyncIntervalMs, "ticker-sync", () => tickers.sync());
+
 if (cfg.x.enabled) {
   const source = new XMentionSource(cfg.x, db);
   const replier: Replier = new XReplier(cfg.x);
   every(cfg.x.pollIntervalMs, "mentions", async () => {
     const { mentions, newestId } = await source.fetchNew();
+    if (!mentions.length) return;
+    // Catch up to the chain head first. If that fails we bail out without committing
+    // newestId, so these tweets are retried on the next poll instead of risking a taken ticker.
+    if (tickers) await tickers.sync();
     for (const m of mentions) await handleMention({ cfg, db, long, replier, log }, m);
     if (newestId) source.commit(newestId);
   });
@@ -46,4 +55,4 @@ if (cfg.x.enabled) {
 
 every(cfg.chain.harvestIntervalMs, "harvest", () => harvestFees(db, long, log));
 
-serve({ fetch: createApp(cfg, db, long).fetch, port: cfg.port }, (info) => log(`web on http://localhost:${info.port}`));
+serve({ fetch: createApp(cfg, db, long, () => tickers?.isFresh() ?? true).fetch, port: cfg.port }, (info) => log(`web on http://localhost:${info.port}`));

@@ -49,17 +49,23 @@ export function validateLaunch(
   if (recentByUser.n >= rules.launchesPerDay)
     return { ok: false, reason: `maksimal ${rules.launchesPerDay} launch per 24 jam` };
 
+  // 0 = a ticker can never be reused.
+  const since = rules.tickerCooldownHours > 0 ? now - rules.tickerCooldownHours * 60 * 60 * 1000 : 0;
+  const window = rules.tickerCooldownHours > 0 ? `dalam ${rules.tickerCooldownHours} jam terakhir` : "sebelumnya";
+
   const dup = db
     .prepare(
       "SELECT token_address FROM launches WHERE ticker = ? AND created_at > ? AND status IN ('queued','deploying','live') ORDER BY created_at DESC LIMIT 1",
     )
-    .get(cmd.ticker, now - rules.tickerCooldownHours * 60 * 60 * 1000) as { token_address: string | null } | undefined;
+    .get(cmd.ticker, since) as { token_address: string | null } | undefined;
   if (dup)
-    return {
-      ok: false,
-      reason: `$${cmd.ticker} sudah di-launch dalam ${rules.tickerCooldownHours} jam terakhir`,
-      existingToken: dup.token_address ?? undefined,
-    };
+    return { ok: false, reason: `$${cmd.ticker} sudah di-launch ${window}`, existingToken: dup.token_address ?? undefined };
+
+  const external = db
+    .prepare("SELECT asset FROM external_launches WHERE symbol = ? AND launched_at > ? ORDER BY launched_at DESC LIMIT 1")
+    .get(cmd.ticker, since) as { asset: string } | undefined;
+  if (external)
+    return { ok: false, reason: `$${cmd.ticker} sudah dipakai di Long.xyz ${window}`, existingToken: external.asset };
 
   return { ok: true };
 }
