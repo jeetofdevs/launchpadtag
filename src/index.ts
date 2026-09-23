@@ -103,13 +103,30 @@ if (cfg.x.enabled) {
   const replier: Replier = xReplier;
   const missing = ["X_BEARER_TOKEN", "X_APP_KEY", "X_APP_SECRET", "X_ACCESS_TOKEN", "X_ACCESS_SECRET"].filter((k) => !process.env[k]);
   if (missing.length) log(`X bot: missing ${missing.join(", ")} — the bot can't read or reply until these are set.`);
-  xReplier.whoami().then(
-    (u) => log(u.toLowerCase() === cfg.x.botHandle.toLowerCase()
-      ? `X bot: replies will be posted as @${u}; listening for @${cfg.x.triggerHandle} every ${cfg.x.pollIntervalMs / 1000}s`
-      : `X bot WARNING: the access token belongs to @${u}, not @${cfg.x.botHandle}. Regenerate X_ACCESS_TOKEN/X_ACCESS_SECRET while logged in as @${cfg.x.botHandle}.`),
-    (e) => log(`X bot: key check failed — ${describeXError(e)}`),
-  );
+  // Don't launch anything until the bot can actually post as its own account: otherwise real tokens
+  // would be deployed (spending Treasury gas) with no reply to the user. Tweets wait, they aren't lost.
+  let xReady = false;
+  let lastCheck = 0;
+  const checkKeys = async () => {
+    lastCheck = Date.now();
+    try {
+      const u = await xReplier.whoami();
+      if (u.toLowerCase() !== cfg.x.botHandle.toLowerCase()) {
+        log(`X bot WARNING: the access token belongs to @${u}, not @${cfg.x.botHandle}. Regenerate X_ACCESS_TOKEN/X_ACCESS_SECRET while logged in as @${cfg.x.botHandle}. Launches are paused.`);
+        return;
+      }
+      xReady = true;
+      log(`X bot: replies will be posted as @${u}; listening for @${cfg.x.triggerHandle} every ${cfg.x.pollIntervalMs / 1000}s`);
+    } catch (e) {
+      log(`X bot: key check failed — ${describeXError(e)} Launches are paused until this is fixed; tweets will be handled afterwards.`);
+    }
+  };
+  void checkKeys();
   every(cfg.x.pollIntervalMs, "mentions", async () => {
+    if (!xReady) {
+      if (Date.now() - lastCheck > 5 * 60_000) await checkKeys(); // re-check every 5 minutes
+      if (!xReady) return;
+    }
     const { mentions, newestId } = await source.fetchNew();
     if (!mentions.length) return;
     // Catch up to the chain head first. If that fails we bail out without committing
