@@ -41,6 +41,9 @@ export function validateLaunch(
   if (author.followers < rules.minFollowers)
     return { ok: false, reason: `account needs at least ${rules.minFollowers} followers` };
 
+  // Long.xyz only accepts letters in a ticker; its launcher reverts on anything else.
+  if (!/^[A-Z]+$/.test(cmd.ticker)) return { ok: false, reason: "tickers can only use letters (A–Z), no numbers" };
+
   if (BLOCKED_TICKERS.has(cmd.ticker)) return { ok: false, reason: "ticker belongs to a real stock/asset", reserved: true };
 
   // Same rule as Long.xyz: a ticker that has been launched is reserved (for TICKER_COOLDOWN_HOURS; 0 = forever).

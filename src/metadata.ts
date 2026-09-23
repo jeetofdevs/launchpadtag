@@ -45,15 +45,50 @@ export function buildMetadata(l: {
   };
 }
 
-/** Pin metadata to IPFS when PINATA_JWT is set, otherwise serve it from our own /meta endpoint. */
-export async function publishMetadata(cfg: Config, tweetId: string, meta: TokenMetadata): Promise<string> {
-  if (!cfg.pinataJwt) return `${cfg.publicUrl}/meta/${tweetId}.json`;
-  const res = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${cfg.pinataJwt}` },
-    body: JSON.stringify({ pinataContent: meta, pinataMetadata: { name: `longshot-${meta.symbol}-${tweetId}` } }),
+async function pinata(cfg: Config, path: string, init: RequestInit): Promise<string> {
+  const res = await fetch(`https://api.pinata.cloud/pinning/${path}`, {
+    ...init,
+    headers: { ...(init.headers ?? {}), authorization: `Bearer ${cfg.pinataJwt}` },
+    signal: AbortSignal.timeout(30_000),
   });
-  if (!res.ok) throw new Error(`Pinata upload failed: ${res.status} ${await res.text()}`);
-  const { IpfsHash } = (await res.json()) as { IpfsHash: string };
-  return `ipfs://${IpfsHash}`;
+  if (!res.ok) throw new Error(`Pinata upload failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
+  return ((await res.json()) as { IpfsHash: string }).IpfsHash;
+}
+
+/**
+ * Pin metadata to IPFS when PINATA_JWT is set, otherwise serve it from our own /meta endpoint.
+ * app.long.xyz only shows a token's image, description and links from an ipfs:// JSON in its own schema
+ * (image_hash, social_links, fee_receiver…), so those fields are added next to the standard ones.
+ */
+export async function publishMetadata(cfg: Config, tweetId: string, meta: TokenMetadata, opts: { feeReceiver?: string } = {}): Promise<string> {
+  if (!cfg.pinataJwt) return `${cfg.publicUrl}/meta/${tweetId}.json`;
+  let imageHash = "";
+  if (meta.image?.startsWith("https://")) {
+    try {
+      const img = await fetch(meta.image, { signal: AbortSignal.timeout(20_000) });
+      if (img.ok) {
+        const form = new FormData();
+        form.append("file", new Blob([await img.arrayBuffer()], { type: img.headers.get("content-type") ?? "image/jpeg" }), `${meta.symbol}.jpg`);
+        form.append("pinataOptions", JSON.stringify({ cidVersion: 1 }));
+        imageHash = `ipfs://${await pinata(cfg, "pinFileToIPFS", { method: "POST", body: form })}`;
+      }
+    } catch {
+      // No image beats no launch: continue with the text metadata.
+    }
+  }
+  const content = {
+    ...meta,
+    ...(imageHash ? { image: imageHash } : {}),
+    image_hash: imageHash,
+    social_links: [{ label: "X", url: meta.twitter }, { label: "Website", url: meta.website }],
+    vesting_recipients: [{ address: "0x0000000000000000000000000000000000000000", amount: 0 }],
+    fee_receiver: opts.feeReceiver ?? "",
+    categories: [],
+  };
+  const cid = await pinata(cfg, "pinJSONToIPFS", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ pinataContent: content, pinataOptions: { cidVersion: 1 }, pinataMetadata: { name: `longshot-${meta.symbol}-${tweetId}` } }),
+  });
+  return `ipfs://${cid}`;
 }

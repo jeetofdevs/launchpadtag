@@ -145,6 +145,17 @@ export function loadConfig() {
       /** Long.xyz launcher; its LaunchCreated events tell us which tickers are taken. */
       longLauncher: env("LONG_LAUNCHER_ADDRESS", "0x22e99278308B393ea1260859B181AD7E78f5eeED") as Address,
       longStartBlock: BigInt(process.env.LONG_START_BLOCK ?? "8636038"),
+      /**
+       * "long" (default): launch through Long.xyz's launcher so tokens are listed on app.long.xyz.
+       * "doppler": launch straight on Doppler (tradable on Uniswap v4, not listed on Long.xyz).
+       */
+      launchVia: (process.env.LAUNCH_VIA === "doppler" ? "doppler" : "long") as "long" | "doppler",
+      /** A real app.long.xyz launch whose create() call is reused as the template for every launch. */
+      longTemplateTx: env("LONG_TEMPLATE_TX", "0xf2b83f462671397a3d8b77b65f42ec71e5b6fb2ceacbaff79a34fba6d36ca09d") as Hex,
+      /** Creation-code hash of Long.xyz tokens; only used after it reproduces the template's token address. */
+      longInitCodeHash: env("LONG_INITCODE_HASH", "0x25b1c7dce612b68798d046d3614a74d420425f2cee9f8c16ec578781ed8377ae") as Hex,
+      /** Doppler pool contract that holds the fees of Long.xyz pools (collectFees). */
+      dopplerHookInitializer: env("DOPPLER_HOOK_INITIALIZER", "0x4e3468951D49f2EEa976eD0D6e75fFCb44a9a544") as Address,
       tickerSyncIntervalMs: int("TICKER_SYNC_INTERVAL_MS", 60_000),
       /** Refuse any single claim payout above this (base units, 0 = no cap). */
       maxPayoutPerClaim: BigInt(process.env.MAX_PAYOUT_PER_CLAIM ?? "0"),

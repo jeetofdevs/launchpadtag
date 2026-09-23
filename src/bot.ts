@@ -105,7 +105,7 @@ export async function handleMention(deps: BotDeps, m: Mention, now = Date.now())
         tweet_id: m.tweetId, image_url: m.imageUrl ?? null, origin_tweet: m.originTweetId ?? null, fee_username: recipient?.username ?? null },
       cfg.publicUrl,
     );
-    const metadataUri = await publishMetadata(cfg, m.tweetId, meta);
+    const metadataUri = await publishMetadata(cfg, m.tweetId, meta, { feeReceiver: long.treasury });
     const { tokenAddress, txHash } = await long.createToken({
       name: cmd.name, symbol: cmd.ticker, stock: cmd.stock, metadataUri,
     });

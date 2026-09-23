@@ -23,7 +23,7 @@ test("send fees is on by default; with SEND_FEES_ENABLED=false the tweet gets a 
   const d = setup();
   assert.equal(d.cfg.rules.sendFeesEnabled, true);
   d.cfg.rules.sendFeesEnabled = false;
-  const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $SOON1 fees @bob_1", author: author({ id: "5" }), mentioned: [bob] });
+  const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $SOONA fees @bob_1", author: author({ id: "5" }), mentioned: [bob] });
   assert.equal(r.kind, "rejected");
   assert.match(d.replier.sent[0].text, /coming soon/);
   const faq = await (await createApp({ ...d.cfg, sessionSecret: "x".repeat(32) }, d.db, d.long).request("http://x/")).text();
@@ -57,11 +57,11 @@ test("send fees: the recipient is credited and can claim; the reply says so", as
 test("send fees: unknown account or the bot itself is rejected; yourself is a normal launch", async () => {
   const d = setup();
   d.cfg.rules.sendFeesEnabled = true;
-  const missing = await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $NOPE1 fees @ghost", author: author({ id: "2" }), mentioned: [] });
+  const missing = await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $NOPEA fees @ghost", author: author({ id: "2" }), mentioned: [] });
   assert.equal(missing.kind, "rejected");
   assert.match(d.replier.sent.at(-1)!.text, /couldn't find the X account @ghost/);
 
-  const self = await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $NOPE2 fees @longshotpadxyz", author: author({ id: "3" }), mentioned: [{ id: "9", username: "longshotpadxyz" }] });
+  const self = await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $NOPEB fees @longshotpadxyz", author: author({ id: "3" }), mentioned: [{ id: "9", username: "longshotpadxyz" }] });
   assert.equal(self.kind, "rejected");
 
   const mine = await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $MINE fees @alice", author: author({ id: "4", username: "alice" }) });

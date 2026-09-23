@@ -210,7 +210,7 @@ Long.xyz runs on the **Doppler Protocol** on **Robinhood Chain (chain ID 4663)**
 
 ### Open items
 
-1. **Listing on app.long.xyz.** Tokens launched directly through Doppler use the same infrastructure, but the Long.xyz feed is built from its launcher contract. If tokens must appear there, launching must go through that contract (its ABI is not public yet). Only the launch function would change; fee collection stays the same.
+1. **Listing on app.long.xyz.** Launches go through Long.xyz's launcher (`LAUNCH_VIA=long`, default). The bot reads one real app.long.xyz launch (`LONG_TEMPLATE_TX`) from the chain, verifies it (successful `create()` on the launcher, token address reproducible and ending in `…1e18`, Long.xyz's 5% cut), and reuses it byte for byte, changing only name, ticker, metadata, pair, fee receiver (the Treasury, 95%) and salt. Every launch is simulated first. Set `PINATA_JWT` so the image and links show on Long.xyz (it only reads `ipfs://` metadata). `LAUNCH_VIA=doppler` launches straight on Doppler instead (not listed).
 2. **Curve parameters** use the SDK's market-cap presets; tune them to match Long.xyz if needed.
 3. **Test with small amounts first.** Addresses come from public sources and have not been exercised end-to-end yet.
 

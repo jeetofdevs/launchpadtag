@@ -24,8 +24,8 @@ test("home shows platform-wide claimed and unclaimed rewards", async () => {
   const d = setup(1_000_000n); // 1 NVDA (6 decimals) of fees per harvest in the mock
   d.cfg.sessionSecret = "x".repeat(32);
   const { author, nextTweetId } = await import("./helpers.ts");
-  await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $AAA1 paired $NVDA", author: author({ id: "1" }) });
-  await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $BBB1 paired $NVDA", author: author({ id: "2" }) });
+  await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $AAAA paired $NVDA", author: author({ id: "1" }) });
+  await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $BBBB paired $NVDA", author: author({ id: "2" }) });
   await harvestFees(d.db, d.long); // each token: 1 NVDA fee → 0.8 NVDA to its deployer
   await claimAll(d.db, d.long, "1", "0x00000000000000000000000000000000000000Aa", 0n);
 

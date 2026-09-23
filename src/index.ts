@@ -104,6 +104,15 @@ if (long instanceof OnchainLongClient) {
   );
 }
 
+if (long instanceof OnchainLongClient && cfg.chain.launchVia === "long") {
+  long.longTemplate().then(
+    (t) => log(`Long.xyz launch template verified (tx ${cfg.chain.longTemplateTx.slice(0, 10)}…): launches go through Long.xyz's launcher, canonical …1e18 addresses, Treasury receives ${Number((t.receiverShares * 100n) / 10n ** 18n)}% of pool fees, Long.xyz ${Number((t.protocolShares * 100n) / 10n ** 18n)}%.`),
+    (e) => log(`WARNING: Long.xyz launch template could not be verified — launches will fail until fixed: ${shortRpcError(e)}`),
+  );
+} else if (cfg.chain.mode === "onchain") {
+  log("LAUNCH_VIA=doppler: tokens launch straight on Doppler (Uniswap v4) and are not listed on app.long.xyz.");
+}
+
 // Know every ticker Long.xyz has handed out, so we respect its reservations.
 const tickers = cfg.chain.mode === "onchain" ? new LongTickerIndexer(cfg.chain, cfg.rules, db, log) : null;
 if (tickers) every(cfg.chain.tickerSyncIntervalMs, "ticker-sync", () => tickers.sync());

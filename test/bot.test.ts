@@ -43,8 +43,8 @@ test("rejects real stock tickers", async () => {
 
 test("rate limit: one launch per user per day", async () => {
   const d = setup();
-  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $AAA1", author: author() })).kind, "live");
-  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $AAA2", author: author() })).kind, "rejected");
+  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $AAAA", author: author() })).kind, "live");
+  assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $AAAB", author: author() })).kind, "rejected");
 });
 
 test("duplicate ticker is refused as reserved", async () => {
@@ -124,4 +124,12 @@ test("token metadata links X to the launch tweet", async () => {
   assert.equal(m.extensions.twitter, tweet);
   assert.deepEqual(m.socials[0], { type: "twitter", url: tweet });
   assert.equal(m.website, "https://longshotpad.xyz/t/123");
+});
+
+test("tickers with numbers are refused before anything is launched (Long.xyz accepts letters only)", async () => {
+  const d = setup();
+  const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $MOON2", author: author() });
+  assert.equal(r.kind, "rejected");
+  assert.match(d.replier.sent[0].text, /letters \(A–Z\)/);
+  assert.equal((d.db.prepare("SELECT COUNT(*) AS n FROM launches WHERE status = 'live'").get() as { n: number }).n, 0);
 });
