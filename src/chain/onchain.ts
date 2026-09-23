@@ -9,7 +9,6 @@ import {
   createWalletClient,
   erc20Abi,
   formatEther,
-  http,
   isAddress,
   parseEther,
   type Address,
@@ -17,6 +16,7 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { robinhood } from "viem/chains";
+import { rpcTransport } from "./rpc.ts";
 import { BPS, DEPLOYER_SHARE_BPS, TOKEN_SUPPLY, type Config, type Stock } from "../config.ts";
 import { BroadcastUncertainError, type CreateTokenParams, type FeeClaim, type LongClient } from "./types.ts";
 
@@ -51,7 +51,7 @@ export class OnchainLongClient implements LongClient {
       throw new Error(`PROTOCOL_SHARE_BPS must be 500..${BPS - DEPLOYER_SHARE_BPS} so deployers keep 80%`);
 
     const account = privateKeyToAccount(cfg.treasuryPrivateKey);
-    const transport = http(cfg.rpcUrl);
+    const transport = rpcTransport(cfg.rpcUrl);
     this.treasury = account.address;
     this.pub = createPublicClient({ chain: robinhood, transport });
     this.wallet = createWalletClient({ chain: robinhood, account, transport });

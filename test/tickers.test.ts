@@ -165,3 +165,12 @@ test("by default a ticker is reserved for 3 days, then free again", async () => 
   assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $TWODAY", author: author({ id: "t1" }) }, now)).kind, "rejected");
   assert.equal((await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $FOURDAY", author: author({ id: "t2" }) }, now)).kind, "live");
 });
+
+test("RPC: own endpoints first, then both public Robinhood Chain endpoints; errors are one line", async () => {
+  const { rpcUrls, shortRpcError } = await import("../src/chain/rpc.ts");
+  assert.deepEqual(rpcUrls("https://a.example, https://rpc.mainnet.chain.robinhood.com"), ["https://a.example", "https://rpc.mainnet.chain.robinhood.com", "https://rpc.ordofi.network"]);
+  const e = Object.assign(new Error("HTTP request failed.\n\nStatus: 403\nDetails: <!DOCTYPE html>…"), { shortMessage: "HTTP request failed.", status: 403, url: "https://rpc.mainnet.chain.robinhood.com/" });
+  const line = shortRpcError(e);
+  assert.ok(!line.includes("\n") && !line.includes("DOCTYPE"));
+  assert.match(line, /HTTP 403.*RPC_URL/);
+});

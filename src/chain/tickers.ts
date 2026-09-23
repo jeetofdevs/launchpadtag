@@ -1,4 +1,5 @@
-import { createPublicClient, erc20Abi, getAddress, http, type Address, type Hex } from "viem";
+import { createPublicClient, erc20Abi, getAddress, type Address, type Hex } from "viem";
+import { rpcTransport } from "./rpc.ts";
 import { robinhood } from "viem/chains";
 import type { Config } from "../config.ts";
 import { getKv, setKv, tx, type DB } from "../db.ts";
@@ -59,7 +60,7 @@ export class LongTickerIndexer {
     private readonly log: (m: string) => void = () => {},
     client?: TickerChainReader,
   ) {
-    this.pub = client ?? (createPublicClient({ chain: robinhood, transport: http(cfg.rpcUrl) }) as unknown as TickerChainReader);
+    this.pub = client ?? (createPublicClient({ chain: robinhood, transport: rpcTransport(cfg.rpcUrl) }) as unknown as TickerChainReader);
   }
 
   /** True when the index was brought up to the chain head recently enough to trust. */
@@ -154,6 +155,8 @@ export class LongTickerIndexer {
         this.log(`ticker index: block ${to}/${head}, ${added} launches so far`);
       }
       if (chunk < MAX_CHUNK) chunk *= 2n;
+      // Pace the backfill so the public RPC doesn't rate-limit (403) us.
+      if (backfill) await new Promise((r) => setTimeout(r, 150));
     }
 
     this.lastSyncAt = Date.now();

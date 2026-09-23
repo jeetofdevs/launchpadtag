@@ -4,6 +4,7 @@ import { ApiResponseError } from "twitter-api-v2";
 import { handleMention, type Replier } from "./bot.ts";
 import { createLongClient } from "./chain/index.ts";
 import { OnchainLongClient } from "./chain/onchain.ts";
+import { rpcUrls, shortRpcError } from "./chain/rpc.ts";
 import { LongTickerIndexer } from "./chain/tickers.ts";
 import { dbIsEphemeral, loadConfig } from "./config.ts";
 import { dropMockDataOnSwitch, getKv, openDb, setKv } from "./db.ts";
@@ -78,6 +79,7 @@ try {
 }
 
 log(`LONGSHOT starting — chain=${cfg.chain.mode}, treasury=${long.treasury}, x=${cfg.x.enabled ? "on" : "off"}, x-login=${cfg.x.oauthClientId ? (cfg.x.oauthClientSecret ? "on" : "missing X_OAUTH_CLIENT_SECRET") : "off (X_OAUTH_CLIENT_ID not set)"}, url=${cfg.publicUrl}, db=${cfg.dbPath}`);
+if (cfg.chain.mode === "onchain") log(`RPC endpoints (tried in order): ${rpcUrls(cfg.chain.rpcUrl).map((u) => new URL(u).host).join(", ")}`);
 
 /** Run `fn` every `ms`, never overlapping with itself. */
 function every(ms: number, name: string, fn: () => Promise<unknown>) {
@@ -85,7 +87,7 @@ function every(ms: number, name: string, fn: () => Promise<unknown>) {
     try {
       await fn();
     } catch (e) {
-      log(`${name} error: ${e instanceof Error ? e.message : e}`);
+      log(`${name} error: ${shortRpcError(e)}`);
     } finally {
       setTimeout(tick, ms);
     }
@@ -98,7 +100,7 @@ if (long instanceof OnchainLongClient) {
     (eth) => log(Number(eth) > 0
       ? `Treasury ${long.treasury} has ${eth} ETH for gas on Robinhood Chain.`
       : `WARNING: Treasury ${long.treasury} has 0 ETH on Robinhood Chain — launches and claims will fail until you send it some ETH for gas.`),
-    (e) => log(`could not read Treasury balance: ${e instanceof Error ? e.message : e}`),
+    (e) => log(`could not read Treasury balance: ${shortRpcError(e)}`),
   );
 }
 
