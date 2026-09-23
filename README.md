@@ -22,7 +22,7 @@ The LONGSHOT bot reads the tweet, launches the token, and replies with the contr
 Why it works:
 - **Viral by default** — every launch is a public tweet plus a bot reply, so distribution starts immediately.
 - **Zero friction** — the meme and the token are born in the same thread.
-- **Creator-first** — 80% of creator fees are credited to the X account that tagged, claimable at any time.
+- **Creator-first** — 80% of every trading fee is credited to the X account that tagged, claimable at any time.
 
 ---
 
@@ -60,7 +60,7 @@ Success:
 📈 Paired: $TSLA
 📜 CA: 0x1234…abcd
 🔗 https://app.long.xyz/tokens/0x1234…abcd
-💰 80% of creator fees go to @username — claim: https://longshotpad.xyz/claim
+💰 @username earns 80% of every trading fee — claim: https://longshotpad.xyz/claim
 ```
 
 Ticker taken:
@@ -86,13 +86,12 @@ Every token launched with LONGSHOT gets the same fair, fixed setup:
 
 Where every trade's 1% fee goes:
 
-| Recipient | Share of volume | Share of fee |
+| Recipient | Share of the fee | Per $100 traded |
 |---|---|---|
-| **Deployer** (the X account that tagged) | 0.76% | 76% |
-| LONGSHOT (bot operations) | 0.19% | 19% |
-| Doppler protocol (launch infrastructure) | 0.05% | 5% |
+| **Deployer** (the X account that tagged) | **80%** | $0.80 |
+| LONGSHOT | 20% | $0.20 |
 
-Example: $10,000 of daily volume earns the deployer about $76 a day. The home page computes these numbers from the live config (`POOL_FEE`, `PROTOCOL_SHARE_BPS`).
+LONGSHOT's 20% includes the Doppler launch protocol's mandatory 5% (`PROTOCOL_SHARE_BPS`), so the deployer's 80% is never reduced. Example: $100,000 of daily volume earns the deployer about $800 a day. The home page has an earnings calculator and computes every number from the live config.
 
 ---
 
@@ -105,19 +104,14 @@ All launches and fee collection run from one operator wallet, the **LONGSHOT Tre
 1. **Launch** — the Treasury creates the token and is set as the pool's fee beneficiary.
 2. **Collect** — the bot regularly collects the Treasury's fees from every LONGSHOT pool.
 3. **Book** — every fee is recorded per token and per **X account ID** of the deployer (ID, not username, so renames are safe).
-4. **Claim** — the deployer opens `/claim`, signs in with X, enters a wallet, and the Treasury sends **80%**. The remaining **20%** covers bot operations (gas, server, X API).
+4. **Claim** — the deployer opens `/claim`, signs in with X, enters a wallet, and the Treasury pays out the deployer's **80% of every trading fee**. LONGSHOT keeps 20% (which already includes the protocol's 5%) for gas, servers and the X API.
 
-| Recipient | Share |
-|---|---|
-| Deployer (the X account that tagged) | 80% |
-| LONGSHOT Treasury (operations) | 20% |
-
-Pools pay fees in **both** pool assets — the Stock Token and the launched token — and both are split 80/20.
+Pools pay fees in **both** pool assets — the Stock Token and the launched token — and both are split 80/20. Because the protocol's 5% is taken before fees reach the Treasury, the ledger credits the deployer 80/95 of what the Treasury receives, which is exactly 80% of the whole fee.
 
 ### Transparency
 
 - The Treasury address is shown on the website.
-- `/fees` is a public page listing, per token, total fees, the 80% deployer share, the 20% operations share, and every payout with its transaction hash.
+- `/fees` is a public page listing, per token, total fees, the deployer share, the LONGSHOT share, and every payout with its transaction hash.
 - The claim page shows each deployer's totals, amounts already paid, and what is claimable.
 
 ### Treasury safety

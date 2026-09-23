@@ -2,6 +2,7 @@ import type { Config } from "./config.ts";
 import type { LongClient } from "./chain/index.ts";
 import type { DB } from "./db.ts";
 import { buildMetadata, publishMetadata } from "./metadata.ts";
+import { feeSplit, pct } from "./tokenomics.ts";
 import { parseLaunch } from "./parser.ts";
 import { validateLaunch, type Author } from "./validate.ts";
 
@@ -94,7 +95,7 @@ export async function handleMention(deps: BotDeps, m: Mention, now = Date.now())
           `📈 Paired: $${cmd.stock}`,
           `📜 CA: ${short(tokenAddress)}`,
           `🔗 ${tokenUrl(cfg, tokenAddress)}`,
-          `💰 80% of creator fees go to @${m.author.username} — claim: ${cfg.publicUrl}/claim`,
+          `💰 @${m.author.username} earns ${pct(feeSplit(cfg.chain).share.deployer)} of every trading fee — claim: ${cfg.publicUrl}/claim`,
         ].join("\n"),
       )
       .catch((e) => log(`reply failed: ${e}`));

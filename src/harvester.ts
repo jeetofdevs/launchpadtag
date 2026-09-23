@@ -5,7 +5,11 @@ import type { DB } from "./db.ts";
 import { recordFee } from "./ledger.ts";
 
 /** Claim creator fees for every live token into the Treasury and book them 80/20 in the ledger. */
-export async function harvestFees(db: DB, long: LongClient, log: (m: string) => void = () => {}) {
+/**
+ * `protocolBps` is the protocol's cut taken before fees reach the Treasury (PROTOCOL_SHARE_BPS),
+ * so the deployer ends up with exactly 80% of the whole trading fee.
+ */
+export async function harvestFees(db: DB, long: LongClient, log: (m: string) => void = () => {}, protocolBps = 0n) {
   const tokens = db
     .prepare("SELECT token_address, x_user_id, stock, ticker FROM launches WHERE status = 'live'")
     .all() as { token_address: Address; x_user_id: string; stock: Stock; ticker: string }[];
@@ -16,7 +20,7 @@ export async function harvestFees(db: DB, long: LongClient, log: (m: string) => 
       const res = await long.claimCreatorFees(t.token_address, t.stock);
       if (!res) continue;
       for (const f of res.fees) {
-        recordFee(db, { tokenAddress: t.token_address, xUserId: t.x_user_id, asset: f.asset, amount: f.amount, txHash: res.txHash });
+        recordFee(db, { tokenAddress: t.token_address, xUserId: t.x_user_id, asset: f.asset, amount: f.amount, txHash: res.txHash }, protocolBps);
         log(`harvested $${t.ticker}: ${f.amount} of ${f.asset} (${res.txHash})`);
       }
       harvested++;

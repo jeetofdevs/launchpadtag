@@ -1,8 +1,12 @@
 import { BPS, DEPLOYER_SHARE_BPS } from "./config.ts";
 import { tx, type DB } from "./db.ts";
 
-export function splitFee(amount: bigint): { deployer: bigint; treasury: bigint } {
-  const deployer = (amount * DEPLOYER_SHARE_BPS) / BPS;
+/**
+ * Split what the Treasury received. The protocol already took `protocolBps` of the fee before it
+ * reached us, so the deployer's 80%-of-the-whole-fee is 80 / (100 - protocol) of what arrived.
+ */
+export function splitFee(amount: bigint, protocolBps = 0n): { deployer: bigint; treasury: bigint } {
+  const deployer = (amount * DEPLOYER_SHARE_BPS) / (BPS - protocolBps);
   return { deployer, treasury: amount - deployer };
 }
 
@@ -10,10 +14,11 @@ export function splitFee(amount: bigint): { deployer: bigint; treasury: bigint }
 export function recordFee(
   db: DB,
   f: { tokenAddress: string; xUserId: string; asset: string; amount: bigint; txHash: string },
+  protocolBps = 0n,
   now = Date.now(),
 ) {
   if (f.amount <= 0n) return;
-  const { deployer, treasury } = splitFee(f.amount);
+  const { deployer, treasury } = splitFee(f.amount, protocolBps);
   db.prepare(
     `INSERT INTO fees(token_address, x_user_id, asset, amount, deployer_share, treasury_share, tx_hash, created_at)
      VALUES(?, ?, ?, ?, ?, ?, ?, ?)`,

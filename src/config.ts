@@ -20,7 +20,10 @@ export const DEFAULT_STOCK_TOKENS: Record<Stock, Address> = {
 /** Every LONGSHOT token: fixed supply, 100% sold through the fair-launch curve (no team, no presale). */
 export const TOKEN_SUPPLY = 1_000_000_000n;
 
-/** Fee split in basis points. Deployer gets 80%, LONGSHOT Treasury keeps 20%. */
+/**
+ * Deployer's share of the WHOLE trading fee: 80%. The other 20% is LONGSHOT's, and the Doppler
+ * protocol's mandatory cut (PROTOCOL_SHARE_BPS, min 5%) comes out of LONGSHOT's 20%.
+ */
 export const DEPLOYER_SHARE_BPS = 8000n;
 export const BPS = 10000n;
 
@@ -89,7 +92,7 @@ export function loadConfig() {
       stockTokens,
       /** Doppler pool swap fee in hundredths of a bip (10000 = 1%). Must be > 0 for beneficiaries to earn. */
       poolFee: int("POOL_FEE", 10_000),
-      /** Share of pool fees routed to the Doppler protocol owner (min 5%); the rest goes to the Treasury. */
+      /** Share of pool fees routed to the Doppler protocol owner (5%..20%); paid out of LONGSHOT's 20%. */
       protocolShareBps: BigInt(process.env.PROTOCOL_SHARE_BPS ?? "500"),
       harvestIntervalMs: int("HARVEST_INTERVAL_MS", 15 * 60_000),
       /** Long.xyz launcher; its LaunchCreated events tell us which tickers are taken. */

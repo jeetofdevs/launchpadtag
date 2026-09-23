@@ -9,7 +9,7 @@ test("launches a token and replies with the CA", async () => {
   assert.equal(res.kind, "live");
   assert.equal(d.replier.sent.length, 1);
   assert.match(d.replier.sent[0].text, /\$ROBO/);
-  assert.match(d.replier.sent[0].text, /80%/);
+  assert.match(d.replier.sent[0].text, /80% of every trading fee/);
   assert.ok(d.replier.sent[0].text.length <= 280);
 });
 

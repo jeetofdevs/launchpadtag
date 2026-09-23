@@ -76,7 +76,7 @@ if (cfg.x.enabled) {
   void new ConsoleReplier(log);
 }
 
-every(cfg.chain.harvestIntervalMs, "harvest", () => harvestFees(db, long, log));
+every(cfg.chain.harvestIntervalMs, "harvest", () => harvestFees(db, long, log, cfg.chain.mode === "onchain" ? cfg.chain.protocolShareBps : 0n));
 
 serve({ fetch: createApp(cfg, db, long, () => tickers?.isFresh() ?? true).fetch, port: cfg.port }, (info) =>
   log(`web listening on port ${info.port}`),

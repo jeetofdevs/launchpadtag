@@ -16,6 +16,11 @@ test("split is 80% deployer / 20% treasury, no dust lost", () => {
   assert.equal(odd.deployer, 5n);
 });
 
+test("with the protocol's 5% taken first, the deployer still gets 80% of the whole fee", () => {
+  // Fee 10000 → protocol took 500 → Treasury received 9500 → deployer 8000 (80% of 10000), LONGSHOT 1500.
+  assert.deepEqual(splitFee(9500n, 500n), { deployer: 8000n, treasury: 1500n });
+});
+
 async function launched(fee = 1000n) {
   const d = setup(fee);
   const res = await handleMention(d, { tweetId: nextTweetId(), text: "@longdotxyz launch $FEE paired $TSLA", author: author() });

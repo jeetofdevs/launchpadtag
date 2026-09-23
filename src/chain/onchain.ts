@@ -16,7 +16,7 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { robinhood } from "viem/chains";
-import { BPS, TOKEN_SUPPLY, type Config, type Stock } from "../config.ts";
+import { BPS, DEPLOYER_SHARE_BPS, TOKEN_SUPPLY, type Config, type Stock } from "../config.ts";
 import { BroadcastUncertainError, type CreateTokenParams, type FeeClaim, type LongClient } from "./types.ts";
 
 /** Serialises async work so balance-delta fee accounting never overlaps a payout. */
@@ -46,7 +46,8 @@ export class OnchainLongClient implements LongClient {
     if (cfg.chainId !== robinhood.id) throw new Error(`CHAIN_ID must be ${robinhood.id} (Robinhood Chain)`);
     if (!/^0x[0-9a-fA-F]{64}$/.test(cfg.treasuryPrivateKey)) throw new Error("TREASURY_PRIVATE_KEY is missing/invalid");
     if (cfg.poolFee <= 0) throw new Error("POOL_FEE must be > 0 or beneficiaries never earn anything");
-    if (cfg.protocolShareBps < 500n || cfg.protocolShareBps >= BPS) throw new Error("PROTOCOL_SHARE_BPS must be 500..9999");
+    if (cfg.protocolShareBps < 500n || cfg.protocolShareBps > BPS - DEPLOYER_SHARE_BPS)
+      throw new Error(`PROTOCOL_SHARE_BPS must be 500..${BPS - DEPLOYER_SHARE_BPS} so deployers keep 80%`);
 
     const account = privateKeyToAccount(cfg.treasuryPrivateKey);
     const transport = http(cfg.rpcUrl);

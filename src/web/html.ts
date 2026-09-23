@@ -67,6 +67,23 @@ h3{font-size:16px;margin:24px 0 10px}
 .tk b{display:block;font-size:22px;letter-spacing:-.01em}
 .tk small{color:var(--muted)}
 .split{display:flex;gap:2px;height:16px;border-radius:8px;overflow:hidden;margin:8px 0 12px}
+.split.big{height:34px;border-radius:10px}
+.split.big .seg{display:flex;align-items:center;padding:0 10px;font-size:13px;font-weight:700;color:var(--accent-ink);white-space:nowrap;overflow:hidden}
+.split.big .seg.s2{color:var(--text)}
+.reward{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+.reward-big{display:flex;gap:14px;align-items:center;margin-bottom:12px}
+.reward-big b{font-size:clamp(40px,9vw,64px);line-height:1;color:var(--accent);letter-spacing:-.03em}
+.reward-big span{font-size:17px}
+.calc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.chips button{background:transparent;color:var(--text);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font:inherit;font-size:14px;cursor:pointer}
+.chips button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.calc input[type=range]{width:100%;accent-color:var(--accent)}
+.calc-out{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+.calc-out small{display:block;color:var(--muted);font-size:12px}
+.calc-out b{font-size:22px;font-variant-numeric:tabular-nums}
+@media (max-width:640px){.calc-out{grid-template-columns:repeat(2,1fr)}}
+.small{font-size:12px}
 .seg{display:block;min-width:4px}
 .s1{background:var(--accent)}.s2{background:var(--accent-2)}.s3{background:var(--accent-3)}
 .legend{list-style:none;padding:0;margin:0 0 12px}
@@ -84,6 +101,6 @@ export function layout(title: string, body: Raw, botHandle = "longshotpadxyz"): 
 <header><div class="wrap"><a class="logo" href="/">LONG<span>SHOT</span></a>
 <nav><a href="/fees">Transparency</a><a href="/claim">Claim</a><a href="${x}" target="_blank" rel="noopener" aria-label="LONGSHOT on X">𝕏<span class="hide-sm"> @${esc(botHandle)}</span></a></nav></div></header>
 <main><div class="wrap">${body.html}</div></main>
-<footer><div class="wrap">LONGSHOT is an independent bot that launches tokens on Long.xyz on behalf of the person who tags it. Deployers receive 80% of creator fees; 20% covers bot operations. LONGSHOT never DMs first and will never ask for your seed phrase. Official account: <a href="${x}" target="_blank" rel="noopener">@${esc(botHandle)}</a> — anyone else is an impersonator.</div></footer>
+<footer><div class="wrap">LONGSHOT is an independent bot that launches tokens on Long.xyz on behalf of the person who tags it. Deployers earn most of every trading fee — see <a href="/#tokenomics">Tokenomics</a>. LONGSHOT never DMs first and will never ask for your seed phrase. Official account: <a href="${x}" target="_blank" rel="noopener">@${esc(botHandle)}</a> — anyone else is an impersonator.</div></footer>
 </body></html>`;
 }

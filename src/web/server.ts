@@ -93,45 +93,82 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       <section class="hero">
         <span class="tag">Take a shot on Long</span>
         <h1>One tweet.<br>One token.</h1>
-        <p class="lead">Tag <b>@${h}</b> with a ticker and LONGSHOT launches your token on Long.xyz, paired with a real tokenized stock. Every trade pays you — <b>${pct(fee.deployer)} of volume, forever</b>.</p>
+        <p class="lead">Tag <b>@${h}</b> with a ticker and LONGSHOT launches your token on Long.xyz, paired with a real tokenized stock. <b>You earn ${pct(fee.share.deployer)} of every trading fee — forever.</b></p>
         <div class="row"><a class="btn" href="${shotUrl}" target="_blank" rel="noopener">Take your shot on X →</a><a class="btn ghost" href="#tokenomics">Tokenomics</a></div>
         <pre>@${h} launch $ROBO "Robo Tesla" paired $TSLA</pre>
       </section>
       <div class="grid">
         <div class="stat"><b>${stats.n}</b><small>tokens live</small></div>
         <div class="stat"><b>${stats.u}</b><small>deployers</small></div>
-        <div class="stat"><b>80%</b><small>of creator fees to you</small></div>
+        <div class="stat"><b>${pct(fee.share.deployer)}</b><small>of every trading fee to you</small></div>
       </div>
 
       <h2>How it works</h2>
       <ol class="steps">
         <li><b>Tweet it.</b> <code>@${h} launch $TICKER</code>. Optional: <code>"Token Name"</code>, <code>paired $NVDA|AAPL|MSFT|GOOGL|TSLA|MU|SPCX</code>, and a photo for the logo.</li>
         <li><b>It's live.</b> LONGSHOT deploys your token and replies with the contract address — usually within a minute.</li>
-        <li><b>Get paid.</b> Every trade earns creator fees, credited to your X account.</li>
-        <li><b>Claim.</b> Open <a href="/claim">/claim</a>, sign in with X, and withdraw your 80% to any wallet.</li>
+        <li><b>Get paid.</b> Every buy and sell pays a trading fee — ${pct(fee.share.deployer)} of it is yours.</li>
+        <li><b>Claim.</b> Open <a href="/claim">/claim</a>, sign in with X, and withdraw to any wallet.</li>
       </ol>
 
       <h2 id="tokenomics">Tokenomics</h2>
       <p class="muted">Every token launched with LONGSHOT gets the same fair, fixed setup.</p>
       <div class="tk-grid">
         <div class="tk"><b>1B</b><small>${Number(TOKENOMICS.supply).toLocaleString("en-US")} fixed supply — no minting, ever</small></div>
-        <div class="tk"><b>${TOKENOMICS.curvePct}%</b><small>fair launch on the bonding curve</small></div>
+        <div class="tk"><b>${TOKENOMICS.curvePct}%</b><small>fair launch — every token sold on the curve</small></div>
         <div class="tk"><b>${TOKENOMICS.teamPct}%</b><small>team · ${TOKENOMICS.presalePct}% presale · no insiders</small></div>
         <div class="tk"><b>Locked</b><small>liquidity stays in the pool forever</small></div>
         <div class="tk"><b>Stock-paired</b><small>trades against a real Robinhood Stock Token</small></div>
-        <div class="tk"><b>${pct(fee.poolFee)}</b><small>trading fee, shared below</small></div>
+        <div class="tk"><b>${pct(fee.poolFee)}</b><small>fee on every buy &amp; sell</small></div>
       </div>
 
-      <h3>Where every trade's ${pct(fee.poolFee)} fee goes</h3>
-      <div class="split" role="img" aria-label="Fee split: ${pct(fee.deployer)} to the deployer, ${pct(fee.longshot)} to LONGSHOT, ${pct(fee.protocol)} to the Doppler protocol">
-        <span class="seg s1" style="flex:${fee.deployer}"></span><span class="seg s2" style="flex:${fee.longshot}"></span><span class="seg s3" style="flex:${fee.protocol}"></span>
+      <h2>Creator rewards</h2>
+      <div class="reward">
+        <div class="reward-big"><b>${pct(fee.share.deployer)}</b><span>of every trading fee goes to the person who launched the token.</span></div>
+        <div class="split big" role="img" aria-label="Trading fee split: ${pct(fee.share.deployer)} to you, ${pct(fee.share.platform)} to LONGSHOT">
+          <span class="seg s1" style="flex:${fee.share.deployer}">YOU ${pct(fee.share.deployer)}</span><span class="seg s2" style="flex:${fee.share.platform}">${pct(fee.share.platform)}</span>
+        </div>
+        <ul class="legend">
+          <li><i class="dot s1"></i><b>${pct(fee.share.deployer)} → you</b>, the deployer</li>
+          <li><i class="dot s2"></i><b>${pct(fee.share.platform)} → LONGSHOT</b>, keeps the bot running<sup>*</sup></li>
+        </ul>
+        <p class="muted">In dollars: every <b>$100</b> traded pays a $${(fee.poolFee).toFixed(2)} fee, and <b>$${(fee.deployer).toFixed(2)}</b> of it is yours. Rewards arrive in both your token and the paired stock.</p>
+        <p class="muted small"><sup>*</sup>LONGSHOT's ${pct(fee.share.platform)} includes the ${pct(fee.share.protocol)} Doppler launch-protocol fee. Your ${pct(fee.share.deployer)} is never reduced.</p>
       </div>
-      <ul class="legend">
-        <li><i class="dot s1"></i><b>${pct(fee.deployer)}</b> of volume → <b>you</b>, the deployer (80% of creator fees)</li>
-        <li><i class="dot s2"></i><b>${pct(fee.longshot)}</b> → LONGSHOT, to keep the bot running (20% of creator fees)</li>
-        <li><i class="dot s3"></i><b>${pct(fee.protocol)}</b> → Doppler protocol, the launch infrastructure</li>
-      </ul>
-      <p class="muted">Fees are paid in both sides of the pool — the paired stock and your token. Example: $10,000 of daily volume earns you about $${Math.round(10_000 * fee.deployer / 100)} a day.</p>
+
+      <h3>What could your token earn?</h3>
+      <div class="calc" data-rate="${fee.deployer / 100}">
+        <label for="vol" class="muted">Daily trading volume</label>
+        <div class="chips">
+          <button type="button" data-v="1000">$1K</button><button type="button" data-v="10000" class="on">$10K</button><button type="button" data-v="100000">$100K</button><button type="button" data-v="1000000">$1M</button>
+        </div>
+        <input id="vol" type="range" min="0" max="1000000" step="1000" value="10000" aria-label="Daily trading volume">
+        <div class="calc-out">
+          <div><small>Volume / day</small><b data-o="vol">$10,000</b></div>
+          <div><small>You earn / day</small><b data-o="day" class="ok">$${Math.round(10_000 * fee.deployer / 100)}</b></div>
+          <div><small>/ month</small><b data-o="month">$${(Math.round(10_000 * fee.deployer / 100) * 30).toLocaleString("en-US")}</b></div>
+          <div><small>/ year</small><b data-o="year">$${(Math.round(10_000 * fee.deployer / 100 * 365)).toLocaleString("en-US")}</b></div>
+        </div>
+        <p class="muted small">Illustration only — actual earnings depend entirely on trading volume.</p>
+      </div>
+      <script>
+      (() => {
+        const c = document.querySelector(".calc"); if (!c) return;
+        const rate = Number(c.dataset.rate), r = c.querySelector("#vol");
+        const usd = (n) => "$" + Math.round(n).toLocaleString("en-US");
+        const set = (v) => {
+          r.value = v;
+          const day = v * rate;
+          c.querySelector('[data-o="vol"]').textContent = usd(v);
+          c.querySelector('[data-o="day"]').textContent = usd(day);
+          c.querySelector('[data-o="month"]').textContent = usd(Math.round(day) * 30);
+          c.querySelector('[data-o="year"]').textContent = usd(day * 365);
+          c.querySelectorAll(".chips button").forEach((b) => b.classList.toggle("on", Number(b.dataset.v) === Number(v)));
+        };
+        r.addEventListener("input", () => set(Number(r.value)));
+        c.querySelectorAll(".chips button").forEach((b) => b.addEventListener("click", () => set(Number(b.dataset.v))));
+      })();
+      </script>
 
       <div class="card"><div class="muted">LONGSHOT Treasury address</div>
         <a class="mono" href="${long.addressUrl(long.treasury)}">${long.treasury}</a></div>
@@ -177,11 +214,11 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     return c.html(page("Fee transparency · LONGSHOT", html`
       <span class="tag">Transparency</span>
       <h1>Where do the fees go?</h1>
-      <p class="lead">All creator fees go to the LONGSHOT Treasury, and 80% is paid to the deployer on claim. Every number below can be checked on the explorer.</p>
+      <p class="lead">Trading fees are collected into the LONGSHOT Treasury, and the deployer's 80% of every fee is paid out on claim. Every number below can be checked on the explorer.</p>
       <div class="card"><div class="muted">LONGSHOT Treasury</div><a class="mono" href="${long.addressUrl(long.treasury)}">${long.treasury}</a></div>
       <h2>Fees per token</h2>
       ${rows.length === 0 ? html`<p class="muted">No fees collected yet.</p>` : html`
-      <div class="scroll"><table><tr><th>Token</th><th>Deployer</th><th class="num">Total fee</th><th class="num">80% deployer</th><th class="num">20% operations</th></tr>${rows}</table></div>`}
+      <div class="scroll"><table><tr><th>Token</th><th>Deployer</th><th class="num">Total fee</th><th class="num">Deployer share</th><th class="num">LONGSHOT share</th></tr>${rows}</table></div>`}
       <h2>Payouts to deployers</h2>
       ${prow.length === 0 ? html`<p class="muted">No payouts yet.</p>` : html`
       <div class="scroll"><table><tr><th>Time (UTC)</th><th>Deployer</th><th class="num">Amount</th><th>Tx</th></tr>${prow}</table></div>`}
@@ -234,7 +271,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     const s = await session(c);
     if (!s) {
       return c.html(page("Claim fee · LONGSHOT", html`
-        <span class="tag">Claim</span><h1>Claim your 80%</h1>
+        <span class="tag">Claim</span><h1>Claim your rewards</h1>
         <p class="lead">Sign in with the X account you tagged from. Fees are tracked by X account ID, so they stay yours even if you change your username.</p>
         <p><a class="btn" href="/auth/x">Sign in with X</a></p>
         ${devLogin ? html`<p class="muted">Test mode: <a href="/auth/dev?uid=1001&username=degen">sign in as @degen</a></p>` : raw("")}
@@ -263,7 +300,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
       ${flash ? html`<div class="card">${flash}</div>` : raw("")}
       <p class="muted">Your tokens: ${tokens.length ? tokens.map((t) => html`<a href="${tokenUrl(cfg, t.token_address)}">$${t.ticker}</a> `) : "none yet"}</p>
       ${rows.length === 0 ? html`<div class="card muted">No fees for this account yet. Fees are collected from the pools regularly.</div>` : html`
-      <div class="scroll"><table><tr><th>Asset</th><th class="num">Total fee</th><th class="num">Your 80%</th><th class="num">20% operations</th><th class="num">Paid out</th><th class="num">Claimable</th></tr>${rows}</table></div>`}
+      <div class="scroll"><table><tr><th>Asset</th><th class="num">Total fee</th><th class="num">Your share</th><th class="num">LONGSHOT share</th><th class="num">Paid out</th><th class="num">Claimable</th></tr>${rows}</table></div>`}
       ${anyClaimable ? html`
       <form class="card" method="post" action="/claim">
         <label for="to" class="muted">Receiving wallet (Robinhood Chain / EVM)</label>
