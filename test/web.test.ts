@@ -93,7 +93,7 @@ test("launches list, token page, and sign-in link", async () => {
   assert.equal(tok.status, 200);
   const body = await tok.text();
   assert.match(body, /Page Token/);
-  assert.match(body, /Paired with <img class="slogo" src="\/logo\/AAPL"[^>]*>\$AAPL/);
+  assert.match(body, /Paired with <img class="slogo" src="\/logo\/AAPL\?v=\d+"[^>]*>\$AAPL/);
   assert.equal((await app.request("http://x/t/123")).status, 404);
 
   const login = await app.request("http://x/login");
@@ -132,8 +132,8 @@ test("stock logos: pages show them, letter badge fallback, unknown symbol 404", 
   d.cfg.sessionSecret = "x".repeat(32);
   const app = createApp(d.cfg, d.db, d.long);
   const page = await (await app.request("http://x/stocks")).text();
-  assert.match(page, /<img class="slogo" src="\/logo\/NVDA"/);
-  assert.match(page, /src="\/logo\/NVDAX3L"/);
+  assert.match(page, /<img class="slogo" src="\/logo\/NVDA\?v=\d+"/);
+  assert.match(page, /src="\/logo\/NVDAX3L\?v=\d+"/);
   const svg = await app.request("http://x/logo/nvda?letter=1");
   assert.equal(svg.status, 200);
   assert.equal(svg.headers.get("content-type"), "image/svg+xml");

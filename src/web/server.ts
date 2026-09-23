@@ -94,19 +94,23 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
 
   // ── Market logos ──────────────────────────────────────────────────────────
   const logoOf = createLogoResolver(cfg.chain.explorerUrl, (sym) => cfg.chain.stockTokens[sym as Stock]);
+  /** Bump when a market logo changes so browsers fetch the new one instead of a cached image. */
+  const LOGO_VERSION = "2";
   /** Market logos shipped in brand/markets/ (for markets without a public logo). */
   const LOCAL_MARKET_LOGOS: Record<string, string> = { AI: "ai.jpg" };
   app.get("/logo/:sym", async (c) => {
     const sym = c.req.param("sym").replace(/\.(png|svg)$/i, "").toUpperCase();
     if (!CATALOG[sym]) return c.notFound();
-    c.header("Cache-Control", "public, max-age=86400");
     // Logos we ship ourselves (brand/markets/<sym>.jpg|png) win over any looked-up one.
     const own = LOCAL_MARKET_LOGOS[sym];
     if (own && !c.req.query("letter")) {
       c.header("Content-Type", own.endsWith(".png") ? "image/png" : "image/jpeg");
+      c.header("Cache-Control", "public, max-age=86400");
       return c.body(await readFile(new URL(`../../brand/markets/${own}`, import.meta.url)));
     }
     const url = c.req.query("letter") ? null : await logoOf(sym);
+    // Looked-up logos can change, so browsers only keep them for an hour.
+    c.header("Cache-Control", "public, max-age=3600");
     if (url) return c.redirect(url, 302);
     c.header("Content-Type", "image/svg+xml");
     return c.body(letterLogo(sym));
@@ -131,7 +135,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
   const feesTo = (u: string | null) => (u ? html`<div class="small muted nowrap">🎁 fees → <a href="https://x.com/${u}" target="_blank" rel="noopener">@${u}</a></div>` : raw(""));
 
   /** Small round market logo; falls back to the letter badge if the image can't load. */
-  const logo = (sym: string, cls = "slogo") => html`<img class="${cls}" src="/logo/${sym}" alt="" loading="lazy" width="22" height="22" onerror="this.onerror=null;this.src='/logo/${sym}?letter=1'">`;
+  const logo = (sym: string, cls = "slogo") => html`<img class="${cls}" src="/logo/${sym}?v=${LOGO_VERSION}" alt="" loading="lazy" width="22" height="22" onerror="this.onerror=null;this.src='/logo/${sym}?letter=1'">`;
 
   // ── Landing ────────────────────────────────────────────────────────────────
   app.get("/", async (c) => {

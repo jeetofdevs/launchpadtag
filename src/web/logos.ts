@@ -1,4 +1,4 @@
-import { CATALOG } from "../stocks.ts";
+import { CATALOG, LONG_TOKENS } from "../stocks.ts";
 
 /**
  * Market logos for /logo/:symbol.
@@ -40,6 +40,8 @@ export function createLogoResolver(explorerUrl: string, addressOf: (sym: string)
       const icon = r ? ((await r.json().catch(() => null)) as { icon_url?: string } | null)?.icon_url : undefined;
       if (icon?.startsWith("https://")) return icon;
     }
+    // Long.xyz's own tokens ($AI is ArtificialINU, not C3.ai) have no company logo to look up by ticker.
+    if (LONG_TOKENS[sym] && !UNDERLYING[sym]) return null;
     const ticker = UNDERLYING[sym] ?? sym;
     if (await isImage(TICKER_LOGO(ticker))) return TICKER_LOGO(ticker);
     return null;
