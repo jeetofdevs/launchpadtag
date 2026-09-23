@@ -78,7 +78,7 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     await next();
   });
 
-  app.get("/healthz", (c) => c.json({ ok: true, chain: cfg.chain.mode, x: cfg.x.enabled, tickerIndexFresh: tickersFresh() }));
+  app.get("/healthz", (c) => c.json({ ok: true, chain: cfg.chain.mode, x: cfg.x.enabled, xLogin: Boolean(cfg.x.oauthClientId && cfg.x.oauthClientSecret), publicUrl: cfg.publicUrl, tickerIndexFresh: tickersFresh() }));
 
   // ── Landing ────────────────────────────────────────────────────────────────
   app.get("/", async (c) => {
