@@ -233,7 +233,7 @@ ${o.publicUrl ? `<meta property="og:image" content="${esc(o.publicUrl)}/brand/og
     <div><a class="logo" href="/">${MARK}LONG<span>SHOT</span></a><p>One tweet. One token.<br>Stock-paired launches on Long.xyz.</p></div>
     <div><b>Product</b><a href="/launches">Launches</a><a href="/stocks">Stocks</a><a href="/claim">Claim rewards</a><a href="/#how">How it works</a></div>
     <div><b>Resources</b><a href="/#tokenomics">Tokenomics</a><a href="/fees">Transparency</a><a href="/#faq">FAQ</a></div>
-    <div><b>Community</b><a href="${x}" target="_blank" rel="noopener">𝕏 @${esc(o.botHandle)}</a><a href="https://app.long.xyz" target="_blank" rel="noopener">Long.xyz</a></div>
+    <div><b>Community</b><a href="${x}" target="_blank" rel="noopener">𝕏 @${esc(o.botHandle)}</a><a href="https://app.long.xyz" target="_blank" rel="noopener">app.long.xyz</a></div>
   </div>
   <p class="fine">LONGSHOT is an independent project and is not affiliated with Long.xyz or Robinhood. It launches tokens on Long.xyz infrastructure on behalf of the person who tags it. LONGSHOT never DMs first and will never ask for your seed phrase — the only official account is <a href="${x}" target="_blank" rel="noopener">@${esc(o.botHandle)}</a>. Memecoins are highly speculative; nothing here is financial advice.</p>
 </div></footer>
