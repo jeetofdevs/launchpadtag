@@ -114,6 +114,22 @@ export function dropMockDataOnSwitch(db: DB, mode: "mock" | "onchain"): number {
   return removed;
 }
 
+/**
+ * One-time wipe of launch history (e.g. test launches), triggered by setting CLEAR_LAUNCH_HISTORY to any
+ * new value. Removes launches and their fee/payout records; the Long.xyz ticker index and settings stay.
+ * The same value never wipes twice, so leaving the variable set after a redeploy is harmless.
+ */
+export function clearLaunchHistoryOnce(db: DB, token: string | undefined): number {
+  const t = token?.trim();
+  if (!t || getKv(db, "launch_history_cleared") === t) return 0;
+  const n = (db.prepare("SELECT COUNT(*) AS n FROM launches").get() as { n: number }).n;
+  tx(db, () => {
+    db.exec("DELETE FROM payouts; DELETE FROM fees; DELETE FROM launches;");
+    setKv(db, "launch_history_cleared", t);
+  });
+  return n;
+}
+
 export function getKv(db: DB, key: string): string | undefined {
   const row = db.prepare("SELECT value FROM kv WHERE key = ?").get(key) as { value: string } | undefined;
   return row?.value;

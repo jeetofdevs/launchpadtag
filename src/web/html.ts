@@ -26,7 +26,8 @@ const CSS = `
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);background-image:radial-gradient(1200px 600px at 80% -10%,rgba(53,242,138,.12),transparent 60%),radial-gradient(900px 500px at -10% 30%,rgba(29,143,85,.14),transparent 60%);background-attachment:fixed;color:var(--text);font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 a{color:var(--accent)}
-.wrap{max-width:880px;margin:0 auto;padding:0 16px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 32px}
+@media (max-width:640px){.wrap{padding:0 16px}}
 header{border-bottom:1px solid var(--line);background:rgba(4,19,11,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);position:sticky;top:0;z-index:20}
 header .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;height:60px}
 .logo{font-weight:800;letter-spacing:.08em;color:var(--text);text-decoration:none;display:inline-flex;align-items:center}
@@ -48,7 +49,7 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;gap:1
 main{padding:32px 0 64px}
 h1{font-size:clamp(32px,6vw,52px);line-height:1.05;margin:8px 0 12px;letter-spacing:-.02em}
 h2{font-size:20px;margin:32px 0 12px}
-.lead{color:var(--muted);font-size:18px;max-width:620px}
+.lead{color:var(--muted);font-size:19px;max-width:700px}
 .tag{display:inline-block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;margin:16px 0}
 pre,code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
@@ -145,7 +146,7 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
 @media (max-width:760px){.band{grid-template-columns:1fr 1fr}}
 .section{margin-top:56px}
 .section>h2{font-size:clamp(24px,4vw,32px);margin:0 0 6px;letter-spacing:-.01em}
-.section>.sub{color:var(--muted);margin:0 0 20px;max-width:640px}
+.section>.sub{color:var(--muted);margin:0 0 20px;max-width:760px}
 .steps4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;counter-reset:s}
 @media (max-width:860px){.steps4{grid-template-columns:1fr 1fr}}
 @media (max-width:520px){.steps4{grid-template-columns:1fr}}

@@ -156,3 +156,16 @@ test("switching the same database from mock to onchain drops fake launches once"
   assert.equal(dropMockDataOnSwitch(d.db, "onchain"), 0);
   assert.equal(count("launches"), 1);
 });
+
+test("CLEAR_LAUNCH_HISTORY wipes launch history once per value", async () => {
+  const { clearLaunchHistoryOnce } = await import("../src/db.ts");
+  const d = await launched(1000n);
+  await harvestFees(d.db, d.long);
+  const count = (t: string) => (d.db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get() as { n: number }).n;
+  assert.equal(clearLaunchHistoryOnce(d.db, undefined), 0);
+  assert.equal(clearLaunchHistoryOnce(d.db, "1"), 1);
+  assert.equal(count("launches") + count("fees"), 0);
+  d.db.prepare("INSERT INTO launches(tweet_id, x_user_id, x_username, ticker, name, stock, status, created_at) VALUES('9','1','a','KEEP','Keep','NVDA','live',1)").run();
+  assert.equal(clearLaunchHistoryOnce(d.db, "1"), 0); // same value: nothing happens again
+  assert.equal(count("launches"), 1);
+});

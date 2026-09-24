@@ -7,7 +7,7 @@ import { OnchainLongClient } from "./chain/onchain.ts";
 import { rpcUrls, shortRpcError } from "./chain/rpc.ts";
 import { LongTickerIndexer } from "./chain/tickers.ts";
 import { dbIsEphemeral, loadConfig } from "./config.ts";
-import { dropMockDataOnSwitch, getKv, openDb, setKv } from "./db.ts";
+import { clearLaunchHistoryOnce, dropMockDataOnSwitch, getKv, openDb, setKv } from "./db.ts";
 import { harvestFees } from "./harvester.ts";
 import { createApp } from "./web/server.ts";
 import { ConsoleReplier, XMentionSource, XReplier, describeXError } from "./x/client.ts";
@@ -71,6 +71,8 @@ try {
   }
   long = createLongClient(cfg.chain);
   const removed = dropMockDataOnSwitch(db, cfg.chain.mode);
+  const cleared = clearLaunchHistoryOnce(db, process.env.CLEAR_LAUNCH_HISTORY);
+  if (cleared) log(`CLEAR_LAUNCH_HISTORY: removed ${cleared} launch record(s) and their fee/payout history. You can delete the variable now.`);
   if (removed) log(`switched to onchain: removed ${removed} test launch(es) and their fake fees/payouts from mock mode.`);
 } catch (e) {
   fatal(e);
