@@ -128,6 +128,12 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
 .hero2 h1{font-size:clamp(40px,7vw,68px)}
 .hero2 .row{margin:22px 0 10px}
 .feesto{display:inline-block;margin-top:8px;border:1px solid var(--accent-2);background:rgba(53,242,138,.08);color:var(--text);border-radius:999px;padding:4px 12px;font-size:14px}
+.official{display:grid;grid-template-columns:1fr 1.2fr;gap:24px;align-items:center;margin:8px 0 28px;padding:24px 28px;border:1px solid var(--accent-2);border-radius:18px;background:linear-gradient(135deg,rgba(53,242,138,.10),rgba(10,34,23,.6))}
+.official h2{margin:4px 0 6px;font-size:40px;letter-spacing:-.02em}
+.official p{margin:0}
+.ca-box{display:flex;gap:10px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:12px}
+.ca-box code{flex:1;min-width:0;word-break:break-all;font-size:14px;color:var(--text)}
+@media (max-width:760px){.official{grid-template-columns:1fr;padding:20px}}
 .chipline{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .slogo{width:22px;height:22px;border-radius:50%;vertical-align:middle;margin-right:8px;background:#0f2a1c;object-fit:cover}
 .chip .slogo{width:16px;height:16px;margin-right:5px}

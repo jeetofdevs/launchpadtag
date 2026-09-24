@@ -204,3 +204,14 @@ test("$AI uses its own shipped logo", async () => {
   assert.equal(r.headers.get("content-type"), "image/jpeg");
   assert.ok((await r.arrayBuffer()).byteLength > 1000);
 });
+
+test("home shows the official coin with its full CA", async () => {
+  const d = setup();
+  d.cfg.sessionSecret = "x".repeat(32);
+  const body = await (await createApp(d.cfg, d.db, d.long).request("http://x/")).text();
+  assert.match(body, /Official coin/);
+  assert.ok(body.includes("0xd260AB037A616962987A66311A136551C3C61e18"));
+  assert.ok(body.includes("https://app.long.xyz/tokens/0xd260AB037A616962987A66311A136551C3C61e18"));
+  d.cfg.officialToken = "";
+  assert.doesNotMatch(await (await createApp(d.cfg, d.db, d.long).request("http://x/")).text(), /Official coin/);
+});

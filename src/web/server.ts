@@ -131,6 +131,25 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
     lastFailedLaunch: lastFailed(),
   }));
 
+  /** The official LONGSHOT coin card: ticker read from the chain, full CA with a copy button. */
+  let officialSymbol: string | null = null;
+  const officialCoin = async () => {
+    const ca = cfg.officialToken;
+    if (!ca || !isAddress(ca)) return raw("");
+    if (officialSymbol === null) {
+      try { officialSymbol = (await long.assetInfo(ca as Address)).symbol; } catch { officialSymbol = ""; }
+    }
+    const sym = officialSymbol || "LONGSHOT";
+    return html`<section class="official" id="official">
+      <div class="off-l"><span class="tag">Official coin</span><h2>$${sym}</h2>
+        <p class="muted">The only official LONGSHOT coin. Always check the contract address.</p></div>
+      <div class="off-r">
+        <div class="ca-box"><code id="official-ca">${ca}</code><button class="btn sm ghost" type="button" onclick="navigator.clipboard.writeText('${ca}');this.textContent='Copied ✓'">Copy CA</button></div>
+        <div class="row"><a class="btn" href="${tokenUrl(cfg, ca)}" target="_blank" rel="noopener">Buy $${sym} on Long.xyz →</a><a class="btn ghost" href="${long.addressUrl(ca)}" target="_blank" rel="noopener">Explorer</a></div>
+      </div>
+    </section>`;
+  };
+
   /** "🎁 fees → @receiver" under the creator, shown when the creator sent the fees to another account. */
   const feesTo = (u: string | null) => (u ? html`<div class="small muted nowrap">🎁 fees → <a href="https://x.com/${u}" target="_blank" rel="noopener">@${u}</a></div>` : raw(""));
 
@@ -188,6 +207,8 @@ export function createApp(cfg: Config, db: DB, long: LongClient, tickersFresh: (
           </div>
         </div>
       </section>
+
+      ${await officialCoin()}
 
       <div class="band">
         <div class="stat"><b>${stats.n}</b><small>tokens launched</small></div>
