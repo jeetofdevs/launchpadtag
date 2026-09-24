@@ -169,8 +169,8 @@ export function loadConfig() {
     },
 
     longAppUrl: env("LONG_APP_URL", "https://app.long.xyz"),
-    /** LONGSHOT's own coin, shown on the website as the official coin. OFFICIAL_TOKEN="" hides it. */
-    officialToken: (process.env.OFFICIAL_TOKEN ?? "0xd260AB037A616962987A66311A136551C3C61e18").trim() as Address | "",
+    /** LONGSHOT's own coin, shown on the website as the official coin when OFFICIAL_TOKEN is set. */
+    officialToken: (process.env.OFFICIAL_TOKEN ?? "").trim() as Address | "",
     pinataJwt: process.env.PINATA_JWT ?? "",
   };
 }

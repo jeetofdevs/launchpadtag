@@ -205,9 +205,12 @@ test("$AI uses its own shipped logo", async () => {
   assert.ok((await r.arrayBuffer()).byteLength > 1000);
 });
 
-test("home shows the official coin with its full CA", async () => {
+test("the official coin shows only when OFFICIAL_TOKEN is set", async () => {
   const d = setup();
   d.cfg.sessionSecret = "x".repeat(32);
+  assert.equal(d.cfg.officialToken, ""); // hidden by default
+  assert.doesNotMatch(await (await createApp(d.cfg, d.db, d.long).request("http://x/")).text(), /Official coin/);
+  d.cfg.officialToken = "0xd260AB037A616962987A66311A136551C3C61e18";
   const body = await (await createApp(d.cfg, d.db, d.long).request("http://x/")).text();
   assert.match(body, /Official coin/);
   assert.ok(body.includes("0xd260AB037A616962987A66311A136551C3C61e18"));
