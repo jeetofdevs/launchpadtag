@@ -71,7 +71,8 @@ try {
   }
   long = createLongClient(cfg.chain);
   const removed = dropMockDataOnSwitch(db, cfg.chain.mode);
-  const cleared = clearLaunchHistoryOnce(db, process.env.CLEAR_LAUNCH_HISTORY);
+  // Test launches made before going public are wiped once ("pre-launch-cleanup"); later wipes use CLEAR_LAUNCH_HISTORY.
+  const cleared = clearLaunchHistoryOnce(db, process.env.CLEAR_LAUNCH_HISTORY || "pre-launch-cleanup");
   if (cleared) log(`CLEAR_LAUNCH_HISTORY: removed ${cleared} launch record(s) and their fee/payout history. You can delete the variable now.`);
   if (removed) log(`switched to onchain: removed ${removed} test launch(es) and their fake fees/payouts from mock mode.`);
 } catch (e) {
