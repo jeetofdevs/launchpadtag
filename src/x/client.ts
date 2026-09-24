@@ -21,6 +21,7 @@ export function describeXError(e: unknown): string {
     const parts = [d.title, d.detail, d.reason, ...(d.errors ?? []).map((x) => `${x.code ?? ""} ${x.message ?? ""}`.trim())].filter(Boolean);
     const hint =
       e.code === 401 ? " → X_APP_KEY/X_APP_SECRET and X_ACCESS_TOKEN/X_ACCESS_SECRET don't match: regenerate the Access Token AFTER the Consumer Key, from the same app."
+      : e.code === 403 && /cashtag|crypto address|duplicate/i.test(parts.join(" ")) ? " → X content rule (not a key problem)."
       : e.code === 403 ? " → the token can't post: set app permissions to Read and write, then regenerate the Access Token."
       : e.code === 402 ? " → no API credits left on the X developer account."
       : e.code === 429 ? " → X rate limit; it will retry later."

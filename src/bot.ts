@@ -60,6 +60,9 @@ export function tokenUrl(cfg: Config, tokenAddress: string) {
   return `${cfg.longAppUrl}/tokens/${tokenAddress}`;
 }
 
+/** Until when replies leave out the contract address (X blocks crypto addresses from new apps for 7 days). */
+let caBlockedUntil = 0;
+
 /** Handle one tweet that tags the trigger handle. Safe to call repeatedly for the same tweet. */
 export async function handleMention(deps: BotDeps, m: Mention, now = Date.now()): Promise<MentionResult> {
   const { cfg, db, long, replier } = deps;
@@ -90,7 +93,7 @@ export async function handleMention(deps: BotDeps, m: Mention, now = Date.now())
         : undefined;
 
   const verdict = cmd.unknownStock
-    ? { ok: false as const, reason: `$${cmd.unknownStock} is not a stock you can pair with — see ${cfg.publicUrl}/stocks`, reserved: false }
+    ? { ok: false as const, reason: `${cmd.unknownStock} is not a stock you can pair with — see ${cfg.publicUrl}/stocks`, reserved: false }
     : feeReject
       ? { ok: false as const, reason: feeReject, reserved: false }
       : validateLaunch(db, cfg.rules, cmd, m.author, now);
@@ -128,7 +131,7 @@ export async function handleMention(deps: BotDeps, m: Mention, now = Date.now())
 
     const lines = [
       `✅ $${cmd.ticker} "${cmd.name}" is LIVE on ${cfg.chain.launchVia === "long" ? "Long.xyz" : "Robinhood Chain"}`,
-      `📈 Paired: $${marketLabel(cmd.stock)}`,
+      `📈 Paired: ${marketLabel(cmd.stock)}`, // X allows only one cashtag per post: the token's
       `📜 CA: ${tokenAddress}`,
       `🔗 ${tokenPageUrl(cfg, tokenAddress)}`,
       recipient
@@ -136,10 +139,24 @@ export async function handleMention(deps: BotDeps, m: Mention, now = Date.now())
         : `💰 @${earner} earns ${pct(feeSplit(cfg.chain).share.deployer)} of every trading fee — claim: ${cfg.publicUrl}/claim`,
     ];
     // The CA is also in the link, so drop the separate CA line if the reply would be too long for X.
-    const text = xLength(lines.join("\n")) <= 280 ? lines.join("\n") : lines.filter((l) => !l.startsWith("📜")).join("\n");
-    await replier
-      .reply(m.tweetId, text)
-      .catch((e) => log(`reply failed: ${e}`));
+    const full = xLength(lines.join("\n")) <= 280 ? lines.join("\n") : lines.filter((l) => !l.startsWith("📜")).join("\n");
+    // Newly authorised X apps may not post crypto addresses for their first 7 days: same reply without the
+    // CA, linking the token page by launch tweet instead.
+    const noCa = lines
+      .filter((l) => !l.startsWith("📜"))
+      .map((l) => (l.startsWith("🔗") ? `🔗 ${cfg.publicUrl}/t/${m.tweetId}` : l))
+      .join("\n");
+    const sendNoCa = () => replier.reply(m.tweetId, noCa).catch((e) => log(`reply failed: ${e}`));
+    if (Date.now() < caBlockedUntil) {
+      await sendNoCa();
+    } else {
+      await replier.reply(m.tweetId, full).catch(async (e) => {
+        if (!/crypto address/i.test(String(e))) return log(`reply failed: ${e}`);
+        caBlockedUntil = Date.now() + 6 * 3600_000; // re-try with the CA every few hours
+        log("X doesn't allow crypto addresses from this app yet (first 7 days); replying without the CA.");
+        await sendNoCa();
+      });
+    }
     return { kind: "live", tokenAddress, txHash };
   } catch (e) {
     const error = chainErrorSummary(e);

@@ -69,7 +69,8 @@ test("pairing with a stock that isn't a Long.xyz market is refused with a pointe
   const d = setup();
   const r = await handleMention(d, { tweetId: nextTweetId(), text: "@longshotpadxyz launch $NOPE paired $ZZZZ", author: author() });
   assert.equal(r.kind, "rejected");
-  assert.match(d.replier.sent[0].text, /\$ZZZZ is not a stock you can pair with — see .*\/stocks/);
+  assert.match(d.replier.sent[0].text, /ZZZZ is not a stock you can pair with — see .*\/stocks/);
+  assert.ok((d.replier.sent[0].text.match(/\$[A-Za-z]/g) ?? []).length <= 1, "X allows one cashtag");
 });
 
 test("X errors are explained without leaking keys", async () => {
@@ -177,4 +178,23 @@ test("the reply links to the token page on our website by contract address", asy
   const long = await handleMention(d, { tweetId: nextTweetId(), text: `@longshotpadxyz launch $LONGNAME "${"N".repeat(32)}" paired $ANTHROPICx1L`, author: author({ id: "x2", username: "a_very_long_name" }) });
   assert.equal(long.kind, "live");
   assert.ok(xLength(d.replier.sent[1].text) <= 280);
+});
+
+test("replies follow X's rules: one cashtag, and no CA when X blocks crypto addresses", async () => {
+  const d = setup();
+  d.cfg.publicUrl = "https://longshotpad.xyz";
+  const cashtags = (t: string) => (t.match(/\$[A-Za-z]/g) ?? []).length;
+  const ok = await handleMention(d, { tweetId: nextTweetId(), text: '@longshotpadxyz launch $ONETAG "One" paired $TSLA', author: author({ id: "c1" }) });
+  assert.equal(ok.kind, "live");
+  assert.equal(cashtags(d.replier.sent[0].text), 1);
+  assert.match(d.replier.sent[0].text, /📈 Paired: TSLA/);
+
+  // X refuses the reply with the CA: the bot retries without it, linking the page by launch tweet.
+  const sent: string[] = [];
+  d.replier = { reply: async (_id: string, text: string) => { if (/0x[0-9a-fA-F]{40}/.test(text)) throw new Error("X 403: Crypto addresses are prohibited for the first 7 days after authentication"); sent.push(text); } } as never;
+  const tweetId = nextTweetId();
+  assert.equal((await handleMention(d, { tweetId, text: "@longshotpadxyz launch $NOCA", author: author({ id: "c2" }) })).kind, "live");
+  assert.equal(sent.length, 1);
+  assert.ok(!/0x[0-9a-fA-F]{40}/.test(sent[0]));
+  assert.ok(sent[0].includes(`https://longshotpad.xyz/t/${tweetId}`));
 });
